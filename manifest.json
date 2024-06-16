@@ -1,0 +1,10 @@
+{
+	"id": "sample-plugin-modif",
+	"name": "Sample Plugin Modif",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Demonstrates some of the capabilities of the Obsidian API.",
+	"author": "3C0D",
+	"authorUrl": "https://github.com/3C0D",
+	"isDesktopOnly": false
+}

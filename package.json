@@ -1,0 +1,39 @@
+{
+	"name": "obsidian-sample-plugin-modif",
+	"version": "1.0.0",
+	"description": "modified sample plugin",
+	"main": "main.js",
+	"scripts": {
+		"dev": "tsx esbuild.config.mts",
+		"start": "tsx scripts/start.mts",
+		"acp": "tsx scripts/acp.mts",
+		"bacp": "tsx scripts/acp.mts -b",
+		"real": "SET REAL=1 && npm run build",
+		"test": "tsx scripts/test-plugin.mts",
+		"build": "tsc -noEmit -skipLibCheck && tsx esbuild.config.mts production",
+		"version": "tsx scripts/update-version.mts",
+		"release": "tsx scripts/release.mts"
+	},
+	"keywords": [],
+	"author": "3C0D",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/fs-extra": "^11.0.4",
+		"@types/node": "^16.11.6",
+		"@types/semver": "^7.5.8",
+		"@typescript-eslint/eslint-plugin": "5.29.0",
+		"@typescript-eslint/parser": "5.29.0",
+		"builtin-modules": "3.3.0",
+		"dotenv": "^16.4.5",
+		"dedent": "^1.5.1",
+		"esbuild": "0.17.3",
+		"obsidian": "latest",
+		"tslib": "2.4.0",
+		"typescript": "4.7.4",
+		"fs": "^0.0.1-security",
+		"fs-extra": "^11.2.0",
+		"json-stringify-pretty-compact": "^4.0.0",
+		"semver": "^7.6.0",
+		"tsx": "^4.7.1"
+	}
+}
