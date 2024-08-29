@@ -39,10 +39,11 @@ async function createTag() {
 
     // Check or create body.md before asking for the commit message
     await checkOrCreateFile(body);
-    exists = execSync(`git tag -l ${tag}`).toString().includes(tag);
+    exists = execSync(`git ls-remote --tags origin`).toString().includes(`refs/tags/${tag}`);
     if (exists) {
-        rl.question(`Tag ${tag} already exists.If you continue, it will be replaced. Do you want to continue? (Yes/No): `, async (answer) => {
+        rl.question(`Tag ${tag} already exists. Do you want to replace it? (Yes/No): `, async (answer) => {
             if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'y') {
+                console.log(`operation aborted`);
                 process.exit();
             } else {
                 execSync(`git tag -d ${tag}`);
@@ -58,7 +59,7 @@ async function createTag() {
 
 createTag();
 
-async function doCommit(currentVersion: string|undefined) {
+async function doCommit(currentVersion: string | undefined) {
     rl.question(`Enter the commit message for version ${currentVersion}: `, async (message) => {
         doNextSteps(message);
         rl.close();
@@ -71,10 +72,20 @@ async function doNextSteps(message: unknown) {
     const toShow = tagMessage.replace(/\\n/g, '\n');
     await createReleaseNotesFile(toShow);
     tagMessage = messages.map(message => `-m "${message}"`).join(' ');
-    execSync(`git add ${body}`);
-    execSync('git commit -m "update tag description"');
-    execSync('git push');
-    execSync(`git tag -a ${tag} ${tagMessage}`);
+    try {
+        execSync(`git add ${body}`);
+        execSync('git commit -m "update tag description"');
+        execSync('git push');
+    } catch {
+    }
+    try {
+        execSync(`git tag -a ${tag} ${tagMessage}`);
+    } catch {
+        execSync(`git tag -d ${tag}`);
+        execSync(`git push origin :refs/tags/${tag}`);
+        console.log(`Fixed`);
+        execSync(`git tag -a ${tag} ${tagMessage}`);
+    }
     execSync(`git push origin ${tag}`);
     console.log(`Release ${tag} pushed to repo.`);
     console.log(dedent`
