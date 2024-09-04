@@ -5,7 +5,7 @@
 	"main": "main.js",
 	"scripts": {
 		"dev": "tsx scripts/esbuild.config.mts",
-		"start": "tsx scripts/start.mts",
+		"start": " node scripts/start.mts",
 		"build": "tsc -noEmit -skipLibCheck && tsx scripts/esbuild.config.mts production",
 		"real": "SET REAL=1 && npm run build",
 		"acp": "tsx scripts/acp.mts",
