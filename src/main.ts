@@ -6,7 +6,6 @@ import QPSSettingTab from "./settings";
 import { fetchData, updateNotes } from "./community-plugins_modal";
 import { CommPlugin, PackageInfoData, QPSSettings } from "./global";
 import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters, TargetPlatform } from './types/variables';
-import { Console } from './Console';
 import { focusSearchInput } from './modal_utils';
 import { addCommandToPlugin } from './modal_components';
 
@@ -25,7 +24,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			const manifests = this.app.plugins.manifests || {};
 
 			// plugin have been deleted from obsidian UI ?
-			let stillInstalled: string[] = [];
+			const stillInstalled: string[] = [];
 			for (const pluginId in installed) {
 				if (pluginId in manifests)
 					stillInstalled.push(pluginId);
@@ -128,7 +127,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		});
 	}
 
-	wrapDisableEnablePluginAndSave(stillInstalled: string[], cb: () => {}) {
+	wrapDisableEnablePluginAndSave(stillInstalled: string[], cb: () => Promise<void>) {
 		const installed = this.settings.installed || {};
 		const wrapper1 = around(this.app.plugins, {
 			disablePluginAndSave(oldMethod) {
@@ -186,7 +185,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		const manifests = this.app.plugins.manifests || {};
 
 		// plugin have been deleted from obsidian UI ?
-		let stillInstalled: string[] = [];
+		const stillInstalled: string[] = [];
 
 		for (const id in installed) {
 			if (id in manifests)
@@ -263,7 +262,7 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	async pluginsCommInfo() {
-		Console.log("fetching'''''''''''''''''''''''''");
+		console.warn("fetching'''''''''''''''''''''''''");
 		let plugins: CommPlugin[], stats: PackageInfoData;
 		try {
 			plugins = await fetchData(COMMPLUGINS);
@@ -272,7 +271,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			return false;
 		}
 		if (plugins && stats) {
-			const { commPlugins, pluginStats } = this.settings
+			const { commPlugins } = this.settings
 
 			for (const plugin of plugins) {
 				let updateStats;
@@ -306,7 +305,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			this.settings.pluginStats = { ...this.settings.pluginStats, ...stats };
 			this.settings.plugins = plugins.map((plugin) => plugin.id);
 			await this.saveSettings();
-			Console.log("fetched");
+			console.warn("fetched");
 			return true;
 		}
 		return false;
@@ -323,10 +322,10 @@ export default class QuickPluginSwitcher extends Plugin {
 				this.settings.lastFetchExe = currentTime;
 				await this.saveSettings();
 			} else {
-				Console.log("community plugins udpate failed, check your connexion");
+				console.warn("community plugins udpate failed, check your connexion");
 			}
 		} else {
-			Console.log(
+			console.log(
 				"fetched less than 2 min, community plugins not updated"
 			);
 		}

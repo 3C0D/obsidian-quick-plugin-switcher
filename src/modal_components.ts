@@ -234,7 +234,7 @@ export const checkbox = (
 }
 
 async function searchUpdates(modal: QPSModal) {
-	const { installed, commPlugins } = modal.plugin.settings;
+	const { installed } = modal.plugin.settings;
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
@@ -309,7 +309,6 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 };
 
 export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
-	const { plugin } = modal;
 	new ButtonComponent(el)
 		.setIcon("list-end")
 		.setCta()
@@ -473,7 +472,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 							) !== -1
 						);
 					});
-					let previousWasEnabled = inGroup.filter(
+					const previousWasEnabled = inGroup.filter(
 						(id) => installed[id].groupInfo.groupWasEnabled === true
 					);
 
@@ -612,7 +611,7 @@ export const itemTextComponent = (
 		customValue = "\u1D30" + customValue;
 	}
 	customValue = customValue + `|${pluginItem.version}`
-	let text = new TextComponent(itemContainer).setValue(customValue)
+	const text = new TextComponent(itemContainer).setValue(customValue)
 	const input = text.inputEl;
 	input.readOnly = true;
 	return input;
@@ -706,7 +705,7 @@ export const searchDivButtons = (
 	contentEl: HTMLElement
 ): void => {
 	// toggle plugin options
-	const span = contentEl.createEl(
+	contentEl.createEl(
 		"span",
 		{
 			cls: "qps-toggle-plugins",
@@ -733,7 +732,7 @@ export const searchCommDivButton = (
 	contentEl: HTMLElement
 ): void => {
 	// toggle plugin options
-	const span = contentEl.createEl(
+	contentEl.createEl(
 		"span",
 		{
 			cls: "qps-toggle-plugins",
@@ -743,9 +742,6 @@ export const searchCommDivButton = (
 		}
 	);
 };
-
-let timer: ReturnType<typeof setTimeout>;
-let clickCount = 0;
 
 export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number, inGroup: string[]) {
 	const { plugin } = modal
@@ -816,7 +812,7 @@ export async function handleClick(evt: MouseEvent | TouchEvent, modal: QPSModal 
 }
 
 let touchCount = 0;
-let touchDelay = 300;
+const touchDelay = 300;
 let clickTimeout: NodeJS.Timeout
 let element: HTMLElement
 export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal) {
@@ -886,7 +882,7 @@ export function handleDblClick(evt: MouseEvent | TouchEvent, modal: QPSModal | C
 
 	if (targetGroup) {
 		const groupName = targetGroup?.textContent;
-		const groupNumber = groupNbFromGrpName(groupName!)
+		const groupNumber = groupNbFromGrpName(groupName as string);
 		editGroupName(modal, targetGroup, groupNumber);
 	}
 
@@ -939,12 +935,12 @@ const handleInputDblClick = async (
 
 export async function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(modal);
-	let targetBlock, targetGroup;
+	let targetBlock;
 
-	targetGroup = elementFromPoint?.closest(".qps-groups-name") as HTMLElement;
+	const targetGroup = elementFromPoint?.closest(".qps-groups-name") as HTMLElement;
 
 	const groupName = targetGroup?.textContent;
-	const groupNumber = groupNbFromGrpName(groupName!)
+	const groupNumber = groupNbFromGrpName(groupName as string);
 
 	if (targetGroup) {
 		await groupMenu(evt, modal, groupNumber, targetGroup);
@@ -982,7 +978,6 @@ export function contextMenuCPM(
 ) {
 	evt.preventDefault();
 	const menu = new Menu();
-	const { settings } = modal.plugin;
 	const id = matchingItem.id;
 	const selectedContent = getSelectedContent();
 	if (selectedContent) {
@@ -1290,7 +1285,7 @@ async function contextMenuQPS(
 	}
 }
 
-export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
+export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, PluginCommInfo>) {
 	const { id, version } = matchingItem;
 	if (!matchingItem.dir) {
 		new Notice(`Not a published plugin`, 2500);
@@ -1352,12 +1347,12 @@ export const findMatchingItem = (
 		const matchingItem = Object.keys(installed).find(
 			(id) => installed[id].id === pluginId
 		);
-		return installed[matchingItem!];
+		return installed[matchingItem as string];
 	} else { // CPModal
 		const matchingItem = Object.keys(commPlugins).find(
 			(id) => commPlugins[id].id === pluginId
 		);
-		return commPlugins[matchingItem!];
+		return commPlugins[matchingItem as string];
 	}
 };
 
@@ -1452,7 +1447,6 @@ export async function removeCommandFromPlugin(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
 ) {
-	const { plugin } = modal;
 	const QPSname = modal.plugin.manifest.id + ":"
 	const pluginId = pluginItem.id + "-switcher"
 	modal.app.commands.removeCommand(QPSname + pluginId)

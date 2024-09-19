@@ -17,7 +17,6 @@ import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
 import { PluginCommInfo, PluginInstalled } from "./global";
-import { Console } from "./Console";
 
 // for plugin description
 export class DescriptionModal extends Modal {
@@ -150,7 +149,7 @@ export async function confirm(
 
 export class ReadMeModal extends Modal {
 	comp: Component;
-	mousePosition: any;
+	mousePosition: { x: number; y: number };
 	scope: Scope = new Scope(this.app.scope);
 	constructor(
 		app: App,
@@ -271,7 +270,7 @@ export class ReadMeModal extends Modal {
 
 		const notesButtonContainer = shortcuts.createDiv({ cls: "notes-button-container" });
 
-		const notesButton = new ButtonComponent(notesButtonContainer)
+		new ButtonComponent(notesButtonContainer)
 			.setButtonText("📝")
 			.onClick(async (e) => {
 				await handleNote(e, this.modal, pluginItem, this)
@@ -291,9 +290,8 @@ export class ReadMeModal extends Modal {
 		const div = contentEl.createDiv({ cls: "qps-read-me" });
 
 		const data = await getReadMe(pluginItem);
-		// const content = Buffer.from(data.content, "base64").toString("utf-8"); // Buffer not working on mobile
+
 		if (!data) {
-			// Console.log("pluginItem", pluginItem)
 			return
 		}
 		const decoder = new TextDecoder("utf-8");
@@ -371,7 +369,7 @@ export class SeeNoteModal extends Modal {
 					for (const line of lines) {
 						if (line.startsWith("# ")) {
 							new Notice("H1 are not allowed, content was paste in clipboard", 4000);
-							const clipboard = navigator.clipboard.writeText(this.sectionContent)
+							navigator.clipboard.writeText(this.sectionContent)
 							await this.cb(null)
 							stop = true
 							break

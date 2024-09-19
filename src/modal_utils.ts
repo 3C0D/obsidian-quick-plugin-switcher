@@ -7,7 +7,6 @@ import { getHkeyCondition } from "./modal_components";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled } from "./global";
-import { Console } from "./Console";
 
 /**
  * Reset most switched values.
@@ -40,7 +39,6 @@ export const sortSwitched = (plugin: Plugin, listItems: string[]) => {
 export const getCommandCondition = async function (
 	modal: QPSModal | CPModal,
 	item: PluginInstalled | PluginCommInfo
-	// | StringString
 ) {
 	const pluginCommands = await modal.app.setting.openTabById(
 		item.id
@@ -63,10 +61,9 @@ export async function openDirectoryInFileManager(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
 ) {
-	let shell = window.electron.remote.shell;
+	const shell = window.electron.remote.shell;
 	const filePath = modal.app.vault.adapter.getFullPath(
-		pluginItem.dir!
-	);
+		pluginItem.dir as string);
 	try {
 		await shell.openPath(filePath);
 	} catch (err) {

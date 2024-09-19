@@ -1,10 +1,10 @@
-import { PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { confirm } from "./secondary_modals";
 import { FolderSuggest } from "./suggester";
 
 export default class QPSSettingTab extends PluginSettingTab {
-	constructor(app: any, public plugin: QuickPluginSwitcher) {
+	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -101,7 +101,7 @@ export default class QPSSettingTab extends PluginSettingTab {
 										if (hasValueGreaterThanValue) {
 											groupIndices = [];
 										}
-									};
+									}
 									settings.numberOfGroupsComm = value;
 									await plugin.saveSettings();
 								} else {

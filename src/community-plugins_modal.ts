@@ -52,7 +52,6 @@ import * as path from "path";
 import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin } from "./groups";
 import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./global";
-import { Console } from "./Console";
 import { translation } from "./translate";
 
 declare global {
@@ -199,7 +198,7 @@ export class CPModal extends Modal {
 					cls: "qps-group-span-container",
 				},
 				(cont) => {
-					const preSpan = cont.createEl(
+					cont.createEl(
 						"span",
 						{
 							cls: "qps-circle-title-group",
@@ -249,7 +248,7 @@ export class CPModal extends Modal {
 			},
 			(el) => {
 				el.createSpan({ text: "(g)" }, (el) => {
-					let gitHubIcon = el.createSpan({ cls: "git-hub-icon" });
+					const gitHubIcon = el.createSpan({ cls: "git-hub-icon" });
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
@@ -454,7 +453,6 @@ export async function getManifest(modal: CPModal | QPSModal, id: string) {
 		const response = await requestUrl(repoURL);
 		return await response.json;
 	} catch (error) {
-		Console.log("id, commPlugins[id]", id, commPlugins[id])
 		console.warn("Error fetching manifest");
 	}
 	return null;
@@ -698,8 +696,8 @@ const addGroupCircles = (
 };
 
 export async function installFromList(modal: CPModal, enable = false) {
-	let properties = ["openFile"];
-	let filePaths: string[] = window.electron.remote.dialog.showOpenDialogSync({
+	const properties = ["openFile"];
+	const filePaths: string[] = window.electron.remote.dialog.showOpenDialogSync({
 		title: "Pick json list file of plugins to install",
 		properties,
 		filters: ["JsonList", "json"],
@@ -728,7 +726,7 @@ export async function installFromList(modal: CPModal, enable = false) {
 
 export async function getPluginsList(modal: CPModal, enable = false) {
 	const installed = getInstalled();
-	let filePath: string = window.electron.remote.dialog.showSaveDialogSync({
+	const filePath: string = window.electron.remote.dialog.showSaveDialogSync({
 		title: "Save installed plugins list as JSON",
 		filters: [{ name: "JSON Files", extensions: ["json"] }],
 	});
@@ -747,7 +745,7 @@ export async function installPluginFromOtherVault(
 	modal: CPModal,
 	enable = false
 ) {
-	let dirPath: string[] = window.electron.remote.dialog.showOpenDialogSync({
+	const dirPath: string[] = window.electron.remote.dialog.showOpenDialogSync({
 		title: "Select your vault directory, you want plugins list from",
 		properties: ["openDirectory"],
 	});
@@ -819,11 +817,10 @@ export async function installPluginFromOtherVault(
 export async function updateNotes(plugin: QuickPluginSwitcher) {
 	const name = "Community plugins notes";
 	const dir = plugin.settings.commPluginsNotesFolder;
-	let note: TFile;
 	const path = dir ? dir + "/" + name + ".md" : name + ".md";
-	note = this.app.vault.getAbstractFileByPath(path) as TFile;
+	const note = this.app.vault.getAbstractFileByPath(path) as TFile;
 	if (note) {
-		let content = note ? await this.app.vault.read(note) : "";
+		const content = note ? await this.app.vault.read(note) : "";
 		const h1Titles: string[] = content.split('\n')
 			.filter((line: string) => line.startsWith('# '))
 			.map((line: string) => line.substring(2).trim());
@@ -859,7 +856,6 @@ export async function handleNote(e: KeyboardEvent | MouseEvent | TouchEvent, mod
 	let sectionContent = "";
 
 	if (sectionIndex !== -1) {
-		Console.log("exists")
 		const contentAfterSection = content.substring(sectionIndex);
 		const nextSectionIndex = contentAfterSection.indexOf("\n# ", sectionHeader.length);
 		sectionContent = nextSectionIndex !== -1
@@ -867,27 +863,22 @@ export async function handleNote(e: KeyboardEvent | MouseEvent | TouchEvent, mod
 			: contentAfterSection;
 		sectionContent = sectionContent.replace(sectionHeader + '\n\n', '');
 	} else {
-		Console.log("append")
 		if (content && !content.endsWith("\n")) {
 			content = content + "\n";
 		}
 		const added = content ? content + "\n" + sectionHeader + "\n\n" : sectionHeader + "\n\n";
-		Console.log("added", added)
-		await modal.app.vault.modify(note!, added);
-		content = await modal.app.vault.read(note!);
+		await modal.app.vault.modify(note as TFile, added);
+		content = await modal.app.vault.read(note as TFile);
 		sectionContent = "";
 	}
 
 	new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
-		await cb(result, modal, pluginItem, sectionContent, note!, content, savedContent, _this)
+		await cb(result, modal, pluginItem, sectionContent, note as TFile, content, savedContent, _this)
 	}, _this).open();
 }
 
 async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommInfo, sectionContent: string, note: TFile, content: string, savedContent: string, _this?: ReadMeModal) {
-	Console.log("sectionContent", sectionContent)
-	Console.log("result", result)
 	if (result === null) {
-		Console.log("invalid content");
 		const updatedContent = content.replace(sectionContent, "");
 		await modal.app.vault.modify(note, updatedContent);
 		content = await modal.app.vault.read(note);
@@ -895,13 +886,9 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 	}
 
 	if (result.trim() === "") {
-		Console.log(" resut has no content")
 		let updatedContent = "";
 		const regexPattern = new RegExp("# " + pluginItem.name + "\n\n?" + sectionContent + "\n?", "g");
 		updatedContent = content.replace(regexPattern, "");
-
-		Console.log("updatedContent", updatedContent)
-
 		await modal.app.vault.modify(note, updatedContent);
 		pluginItem.hasNote = false;
 		await modal.plugin.saveSettings();
@@ -917,18 +904,12 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 		return
 	}
 
-	Console.log("result has content")
 	if (sectionContent.trim() === result.trim()) {
-		Console.log("same content")
 		return
 	} else {
-		Console.log("not same content")
 		if (!sectionContent) {
-			Console.log("append")
-			const added = content ? "\n# " + pluginItem.name + "\n\n" + result : "\n" + result
 			modal.app.vault.append(note, (result));
 		} else {
-			Console.log("replace")
 			const updatedContent = content.replace(sectionContent, result);
 			await modal.app.vault.modify(note, updatedContent);
 		}

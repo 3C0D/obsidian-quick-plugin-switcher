@@ -76,7 +76,8 @@ async function doNextSteps(message: unknown) {
         execSync(`git add ${body}`);
         execSync('git commit -m "update tag description"');
         execSync('git push');
-    } catch {
+    } catch (error) {
+        console.error('Error:', error.message);
     }
     try {
         execSync(`git tag -a ${tag} ${tagMessage}`);

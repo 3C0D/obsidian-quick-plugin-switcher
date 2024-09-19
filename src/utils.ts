@@ -1,4 +1,8 @@
-export function isEnabled(modal: any, id: string): boolean {
+import { CPModal } from "./community-plugins_modal";
+import QuickPluginSwitcher from "./main";
+import { QPSModal } from "./main_modal";
+
+export function isEnabled(modal: QuickPluginSwitcher | CPModal | QPSModal, id: string): boolean {
 	return modal.app.plugins.enabledPlugins.has(id);
 }
 
@@ -71,20 +75,7 @@ export function calculateTimeElapsed(datePasted: Date): string {
 	return "seconds ago";
 }
 
-export function compareVersions(v1: any, v2: any) {
-	const [Maj1, Min1, Patch1] = v1.split('.');
-	const [Maj2, Min2, Patch2] = v2.split('.');
-
-	if (Maj1 === Maj2) {
-		if (Min1 === Min2) {
-			return Patch1 - Patch2;
-		}
-		return Min1 - Min2;
-	}
-	return Maj1 - Maj2;
-}
-
-export function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {
+export function hasKeyStartingWith(obj: Record<string, string>, prefix: string): boolean {
 	for (const key in obj) {
 		if (key.startsWith(prefix)) {
 			return true;
