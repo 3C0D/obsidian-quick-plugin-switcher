@@ -4,8 +4,8 @@ import { execSync } from 'child_process';
 const currentEvent = process.env.npm_lifecycle_event;
 console.log(`Starting the ${currentEvent} process...\n`);
 
-execSync('npm install', { stdio: 'inherit' });
-console.log('- Installed dependencies');
+// Removed 'npm ci' as it's now in package.json
+console.log('- Dependencies should be installed');
 
 //@ts-ignore
 execSync("start /B code .", { stdio: "ignore", shell: true });

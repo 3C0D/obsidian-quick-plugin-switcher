@@ -16,14 +16,29 @@ const rl = readline.createInterface({
         }
 
         const input: string = await askQuestion('Enter commit message: ', rl);
-        rl.close();   
+        rl.close();
 
         const cleanedInput = cleanInput(input);
-        
-        execSync('git add .');
-        execSync(`git commit -m "${cleanedInput}"`);
-        execSync('git push');
-        console.log('Commit and push successful.');
+
+        try {
+            execSync(`git add .`);
+            execSync(`git commit -m "${cleanedInput}"`);
+        } catch (commitError) {
+            console.log('Commit already exists.');
+        }
+
+        // get current branch name
+        const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+
+        try {
+            execSync(`git push origin ${currentBranch}`);
+            console.log('Commit and push successful.');
+        } catch (pushError) {
+            // if push fails, set upstream and try again
+            console.log(`Setting upstream branch for ${currentBranch}...`);
+            execSync(`git push --set-upstream origin ${currentBranch}`);
+            console.log('Upstream branch set and push successful.');
+        }
     } catch (error) {
         console.error('Error:', error.message);
     } finally {
@@ -31,4 +46,3 @@ const rl = readline.createInterface({
         process.exit();
     }
 })();
-

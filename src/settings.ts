@@ -1,120 +1,28 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, debounce, PluginSettingTab, Setting, SliderComponent } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { confirm } from "./secondary_modals";
 import { FolderSuggest } from "./suggester";
+import { PluginCommInfo, PluginInstalled } from "./global";
 
-export default class QPSSettingTab extends PluginSettingTab {
-	constructor(app: App, public plugin: QuickPluginSwitcher) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+export class QPSSettingTab extends PluginSettingTab {
+    plugin: QuickPluginSwitcher;
+    private lastConfirmedValues: { [key: string]: number };
+
+    constructor(app: App, plugin: QuickPluginSwitcher) {
+        super(app, plugin);
+        this.plugin = plugin;
+        this.lastConfirmedValues = {
+            numberOfGroups: this.plugin.settings.numberOfGroups,
+            numberOfGroupsComm: this.plugin.settings.numberOfGroupsComm
+        };
+    }
 
 	display(): void {
 		const { containerEl } = this;
-		const { plugin } = this;
-		const { settings } = plugin;
-
 		containerEl.empty();
 
-		let saveSettingsTimeout: ReturnType<typeof setTimeout>;
-		const { numberOfGroups, numberOfGroupsComm } = settings;
-		new Setting(containerEl)
-			.setName("Number of plugins groups")
-			.setDesc("To treat plugins by groups")
-			.addSlider((slider) => {
-				slider
-					.setLimits(1, 6, 1)
-					.setValue(numberOfGroups)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						if (value < numberOfGroups) {
-							clearTimeout(saveSettingsTimeout);
-							saveSettingsTimeout = setTimeout(async () => {
-								const confirmReset = await confirm(
-									"reducing number of groups, higher groups info will be lost",
-									350
-								);
-								if (confirmReset) {
-									const { installed } = settings
-									for (const key in installed) {
-										let hasValueGreaterThanValue =
-											false;
-										for (const groupIndex of installed[key].groupInfo.groupIndices) {
-											if (groupIndex > value) {
-												hasValueGreaterThanValue =
-													true;
-												break;
-											}
-										}
-										if (hasValueGreaterThanValue) {
-											installed[key].groupInfo.groupIndices =
-												[];
-										}
-									}
-
-									settings.numberOfGroups = value;
-									await plugin.saveSettings();
-								} else {
-									slider.setValue(numberOfGroups);
-								}
-							}, 700);
-						} else {
-							clearTimeout(saveSettingsTimeout);
-							settings.numberOfGroups = value;
-							await plugin.saveSettings();
-						}
-						settings.numberOfGroups = value;
-						await plugin.saveSettings();
-					});
-			});
-
-		new Setting(containerEl)
-			.setName("Number of community plugins groups")
-			.setDesc("To treat plugins by groups")
-			.addSlider((slider) => {
-				slider
-					.setLimits(1, 6, 1)
-					.setValue(numberOfGroupsComm)
-					.setDynamicTooltip()
-					.onChange(async (value) => {
-						if (value < numberOfGroupsComm) {
-							clearTimeout(saveSettingsTimeout);
-							saveSettingsTimeout = setTimeout(async () => {
-								const confirmReset = await confirm(
-									"reducing number of groups, higher groups info will be lost",
-									350
-								);
-								if (confirmReset) {
-									const { commPlugins } =
-										settings;
-									for (const key in commPlugins) {
-										let hasValueGreaterThanValue = false;
-										let groupIndices = commPlugins[key].groupCommInfo.groupIndices;
-										if (groupIndices) {
-											for (const groupIndex of groupIndices) {
-												if (groupIndex > value) {
-													hasValueGreaterThanValue = true;
-													break;
-												}
-											}
-										}
-										if (hasValueGreaterThanValue) {
-											groupIndices = [];
-										}
-									}
-									settings.numberOfGroupsComm = value;
-									await plugin.saveSettings();
-								} else {
-									slider.setValue(numberOfGroupsComm);
-								}
-							}, 700);
-						} else {
-							clearTimeout(saveSettingsTimeout);
-							settings.numberOfGroupsComm = value;
-							await plugin.saveSettings();
-						}
-					});
-			});
+		this.addGroupSlider("Number of plugins groups", "numberOfGroups");
+        this.addGroupSlider("Number of community plugins groups", "numberOfGroupsComm");
 
 		new Setting(containerEl)
 			.setName("Show hotkeys line reminder")
@@ -142,7 +50,9 @@ export default class QPSSettingTab extends PluginSettingTab {
 		const fragment = new DocumentFragment();
 		fragment.createDiv({}, div => {
 			div.innerHTML = `
-						Enter a new folder path or search it. <br>If you provide a non existing folder path, it will be created when adding a new note.<br> If you delete the file in, you lose your notes`
+						Enter a new folder path or search it. <br>
+						If you provide a non existing folder path, it will be created when adding a new note.<br> 
+						If you delete the file in, you lose your notes`
 		});
 
 		new Setting(containerEl)
@@ -160,4 +70,61 @@ export default class QPSSettingTab extends PluginSettingTab {
 				}
 			});
 	}
+
+	private addGroupSlider(name: string, key: "numberOfGroups" | "numberOfGroupsComm"): void {
+        new Setting(this.containerEl)
+            .setName(name)
+            .setDesc("To treat plugins by groups")
+            .addSlider((slider) => {
+                slider
+                    .setLimits(1, 6, 1)
+                    .setValue(this.lastConfirmedValues[key])
+                    .setDynamicTooltip()
+                    .onChange((value) => {
+                        this.debouncedHandleChange(key, value, slider);
+                    });
+            });
+    }
+
+	private debouncedHandleChange = debounce(
+        async (key: "numberOfGroups" | "numberOfGroupsComm", value: number, slider: SliderComponent) => {
+            if (value < this.lastConfirmedValues[key]) {
+                const confirmReset = await confirm(
+                    "Reducing number of groups, higher groups info will be lost",
+                    350
+                );
+                if (confirmReset) {
+                    await this.handleGroupReduction(key, value);
+                    this.lastConfirmedValues[key] = value;
+                } else {
+                    slider.setValue(this.lastConfirmedValues[key]);
+                }
+            } else {
+                this.plugin.settings[key] = value;
+                this.lastConfirmedValues[key] = value;
+                await this.plugin.saveSettings();
+            }
+        },
+        600,
+        true
+    );
+
+	private async handleGroupReduction(key: "numberOfGroups" | "numberOfGroupsComm", value: number): Promise<void> {
+        const { settings } = this.plugin;
+        const targetGroup = key === "numberOfGroups" ? settings.installed : settings.commPlugins;
+
+        for (const pluginKey in targetGroup) {
+			const plugin = targetGroup[pluginKey];
+			const groupInfo = key === "numberOfGroups" ? (plugin as PluginInstalled).groupInfo : (plugin as PluginCommInfo).groupCommInfo ;
+        
+            if (groupInfo && groupInfo.groupIndices) {
+                groupInfo.groupIndices = groupInfo.groupIndices.filter(
+                    (groupIndex: number) => groupIndex <= value
+                );
+            }
+        }
+
+        settings[key] = value;
+        await this.plugin.saveSettings();
+    }
 }

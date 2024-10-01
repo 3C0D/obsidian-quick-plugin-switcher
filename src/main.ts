@@ -2,12 +2,14 @@ import { Platform, Plugin } from 'obsidian';
 import { around } from "monkey-around";
 import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
-import QPSSettingTab from "./settings";
+import { QPSSettingTab } from "./settings";
 import { fetchData, updateNotes } from "./community-plugins_modal";
-import { CommPlugin, PackageInfoData, QPSSettings } from "./global";
+import { PluginCommInfo, PluginInstalled, QPSSettings } from "./global";
 import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters, TargetPlatform } from './types/variables';
 import { focusSearchInput } from './modal_utils';
 import { addCommandToPlugin } from './modal_components';
+
+// ajouter github raccourci dans readme
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
@@ -18,113 +20,121 @@ export default class QuickPluginSwitcher extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		this.app.workspace.onLayoutReady(async () => {
-			this.settings.savedVersion = this.manifest.version;
-			const installed = this.settings.installed || {};
-			const manifests = this.app.plugins.manifests || {};
+		this.app.workspace.onLayoutReady(this.initializePlugin.bind(this));
+		this.addSettingTab(new QPSSettingTab(this.app, this));
+		this.addCommands();
+	}
 
-			// plugin have been deleted from obsidian UI ?
-			const stillInstalled: string[] = [];
-			for (const pluginId in installed) {
-				if (pluginId in manifests)
-					stillInstalled.push(pluginId);
-				else {
-					delete installed[pluginId]
-				}
+	private async initializePlugin() {
+        this.settings.savedVersion = this.manifest.version;
+        await this.updateInstalledPlugins();
+		await this.setupPluginWrappers();
+        await this.syncEnabled();
+        await this.handleDelayedPlugins();
+    }
+
+	async updateInstalledPlugins() {
+		const installed = this.settings.installed || {};
+		const manifests = this.app.plugins.manifests || {};
+
+		for (const pluginId in installed) {
+			if (!(pluginId in manifests)) {
+				delete installed[pluginId];
+			}
+		}
+	}
+
+	async setupPluginWrappers() {
+		const { wrapper1, wrapper2 } = this.wrapDisableEnablePluginAndSave(
+			Object.keys(this.settings.installed),
+			async () => await this.saveSettings());
+
+		this.register(wrapper1);
+		this.register(wrapper2);
+	}
+
+	async syncEnabled() {
+		const installed = this.settings.installed;
+		// plugin has been toggled from obsidian UI ? or if is delayed unabled
+		for (const id in installed) {
+			if (
+				isEnabled(this, id) !== installed[id].enabled &&
+				!installed[id].delayed
+				&& !(installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop)//because if delayed isEnabled false
+			) {
+				installed[id].enabled = !installed[id].enabled;
+			}
+		}
+		await this.saveSettings();
+	}
+
+
+	isPlatformMismatch(pluginItem: PluginInstalled) {
+		return (pluginItem.target === TargetPlatform.Mobile && Platform.isDesktop) ||
+			(pluginItem.target === TargetPlatform.Desktop && Platform.isMobile);
+	}
+
+	isPlatformDependent(pluginItem: PluginInstalled) {
+		return pluginItem.target === TargetPlatform.Mobile || pluginItem.target === TargetPlatform.Desktop;
+	}
+
+	async handleDelayedPlugins() {
+		const installed = this.settings.installed;
+
+		for (const id in installed) {
+			const pluginItem = installed[id]
+
+			if (pluginItem.commandified) {
+				await addCommandToPlugin(this, pluginItem)
 			}
 
-			//wrapper enable/disable&save
-			const { wrapper1, wrapper2 } = this.wrapDisableEnablePluginAndSave(
-				stillInstalled,
-				async () => {
-					await this.saveSettings();
-				}
-			);
-
-			this.register(wrapper1);
-			this.register(wrapper2);
-
-			// plugin has been toggled from obsidian UI ? or if is delayed unabled
-			for (const id of stillInstalled) {
-				if (
-					isEnabled(this, id) !== installed[id].enabled &&
-					!installed[id].delayed
-					&& !(installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop)//because if delayed isEnabled false
-				) {
-					installed[id].enabled = !installed[id].enabled;
-				}
-			}
-			await this.saveSettings();
-
-			for (const id of stillInstalled) {
-				const isPlatformDep = installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop
-				const platformOff =
-					installed[id].target === TargetPlatform.Mobile && Platform.isDesktop
-					|| installed[id].target === TargetPlatform.Desktop && Platform.isMobile
-				//delay at start
-				if (installed[id].commandified) {
-					await addCommandToPlugin(this, installed[id])
-				}
-				if ((installed[id].delayed
-					|| isPlatformDep)
-					&& installed[id].enabled) {
-					if (platformOff) {
-						await this.app.plugins.disablePlugin(id)
+			// Handle delayed or platform-dependent plugins
+			if ((pluginItem.delayed || this.isPlatformDependent(pluginItem)) && pluginItem.enabled) {
+				if (this.isPlatformMismatch(pluginItem)) {
+					await this.app.plugins.disablePlugin(id)
+				} else {
+					if (pluginItem.delayed) {
+						const time = pluginItem.time * 1000 || 0;
+						setTimeout(
+							async () => await this.app.plugins.enablePlugin(id),
+							time
+						);
 					} else {
-						if (installed[id].delayed) {
-							const time = installed[id].time * 1000 || 0;
-							setTimeout(
-								async () =>
-									await this.app.plugins.enablePlugin(id),
-								time
-							);
-						} else {
-							await this.app.plugins.enablePlugin(id)
-						}
+						await this.app.plugins.enablePlugin(id)
 					}
 				}
-				//reset toUpdate
-				installed[id].toUpdate = false
 			}
-		});
 
-		this.addSettingTab(new QPSSettingTab(this.app, this));
+			//reset toUpdate
+			installed[id].toUpdate = false
+		}
+	}
+
+
+	addCommands() {
+		this.addCommand({
+			id: "quick-plugin-switcher-modal",
+			name: "Open modal",
+			callback: () => this.openQuickPluginSwitcherModal()
+		});
 
 		this.addRibbonIcon(
 			"toggle-right",
 			"Quick Plugin Switcher",
-			async (evt: MouseEvent) => {
-				if (!this.settings.keepDropDownValues) {
-					this.settings.filters = Filters.all
-					this.settings.filtersComm = CommFilters.all
-				}
-				await this.installedUpdate();
-				new QPSModal(this.app, this).open();
-				focusSearchInput(10);
-				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
-				setTimeout(async () => {
-					await updateNotes(this)
-				}, 700);
-			}
+			(evt: MouseEvent) => this.openQuickPluginSwitcherModal()
 		);
+	}
 
-		this.addCommand({
-			id: "quick-plugin-switcher-modal",
-			name: "open modal",
-			callback: async () => {
-				if (!this.settings.keepDropDownValues) {
-					this.settings.filters = Filters.all
-					this.settings.filtersComm = CommFilters.all
-				}
-				await this.installedUpdate();
-				new QPSModal(this.app, this).open();
-				focusSearchInput(10);
-				await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
-				setTimeout(async () => {
-					await updateNotes(this);
-				}, 700);
-			},
-		});
+	async openQuickPluginSwitcherModal() {
+		if (!this.settings.keepDropDownValues) {
+			this.settings.filters = Filters.all;
+			this.settings.filtersComm = CommFilters.all;
+		}
+		await this.installedUpdate();
+		new QPSModal(this.app, this).open();
+		focusSearchInput(10);
+		await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
+		setTimeout(() => updateNotes(this), 700);
 	}
 
 	wrapDisableEnablePluginAndSave(stillInstalled: string[], cb: () => Promise<void>) {
@@ -262,75 +272,62 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	async pluginsCommInfo() {
-		console.warn("fetching'''''''''''''''''''''''''");
-		let plugins: CommPlugin[], stats: PackageInfoData;
+		console.warn("Fetching community plugins info...");
 		try {
-			plugins = await fetchData(COMMPLUGINS);
-			stats = await fetchData(COMMPLUGINSTATS);
-		} catch {
-			return false;
-		}
-		if (plugins && stats) {
-			const { commPlugins } = this.settings
+			const [plugins, stats] = await Promise.all([
+				fetchData(COMMPLUGINS),
+				fetchData(COMMPLUGINSTATS)
+			]);
 
-			for (const plugin of plugins) {
-				let updateStats;
-				if (plugin.id in stats) {
-					updateStats = {
-						downloads: stats[plugin.id].downloads || 0,
-						updated: stats[plugin.id].updated || 0
-					}
-				} else {
-					updateStats = {
-						downloads: 0,
-						updated: 0
-					}
-				}
-
-				if (plugin.id in commPlugins) {
-					commPlugins[plugin.id] = { ...commPlugins[plugin.id], ...plugin, ...updateStats };
-				} else {
-					const complement = {
-						groupCommInfo: {
-							hidden: false,
-							groupIndices: []
-						},
-						hasNote: false,
-						...updateStats
-					}
-					commPlugins[plugin.id] = { ...plugin, ...complement };
-				}
+			if (!plugins || !stats) {
+				console.error("Failed to fetch plugin data or stats.");
+				return false;
 			}
+
+			const { commPlugins } = this.settings;
+
+			plugins.forEach((plugin: PluginCommInfo) => {
+				const updateStats = stats[plugin.id] || { downloads: 0, updated: 0 };
+				commPlugins[plugin.id] = {
+					...commPlugins[plugin.id],
+					...plugin,
+					...updateStats,
+					groupCommInfo: commPlugins[plugin.id]?.groupCommInfo || {
+						hidden: false,
+						groupIndices: []
+					},
+					hasNote: commPlugins[plugin.id]?.hasNote || false
+				};
+			});
 
 			this.settings.pluginStats = { ...this.settings.pluginStats, ...stats };
-			this.settings.plugins = plugins.map((plugin) => plugin.id);
+			this.settings.plugins = plugins.map((plugin: PluginCommInfo) => plugin.id);
 			await this.saveSettings();
-			console.warn("fetched");
+			console.log("Community plugins info updated successfully.");
 			return true;
+		} catch (error) {
+			console.error("Failed to process plugin data:", error);
+			return false;
 		}
-		return false;
 	}
 
-	exeAfterDelay = async (
-		func: () => Promise<boolean>
-	) => {
+	exeAfterDelay = async (func: () => Promise<boolean>) => {
 		const currentTime: number = Date.now();
-		// delay 2min
-		if (currentTime - this.settings.lastFetchExe >= 120000) {
-			const ret = await func();
-			if (ret === true) {
-				this.settings.lastFetchExe = currentTime;
-				await this.saveSettings();
-			} else {
-				console.warn("community plugins udpate failed, check your connexion");
-			}
+		const timeSinceLastFetch = currentTime - this.settings.lastFetchExe;
+
+		if (timeSinceLastFetch < 120000) {
+			console.log("Skipping fetch: less than 2 minutes since last update");
+			return;
+		}
+
+		const success = await func();
+		if (success) {
+			this.settings.lastFetchExe = currentTime;
+			await this.saveSettings();
 		} else {
-			console.log(
-				"fetched less than 2 min, community plugins not updated"
-			);
+			console.warn("Community plugins update failed, please check your connection");
 		}
 	};
-
 
 	async loadSettings() {
 		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };

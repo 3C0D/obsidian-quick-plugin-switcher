@@ -80,7 +80,7 @@ interface QPSSettings {
     // commnunity plugins
     pluginStats: PackageInfoData;
     plugins: string[];
-    commPlugins: Record<string, PluginCommInfo>;
+    commPlugins: CommPlugins;
     filtersComm: keyof typeof CommFilters;
     selectedGroupComm: string;
     numberOfGroupsComm: number;
@@ -90,6 +90,8 @@ interface QPSSettings {
     commPluginsNotesFolder: string;
     keepDropDownValues: boolean;
 }
+
+export type CommPlugins = Record<string, PluginCommInfo>;
 
 type KeyToSettingsMapType = {
     [key: string]: () => Promise<void> | void;
@@ -104,7 +106,7 @@ interface CommPlugin {
 }
 
 // community plugins
-interface PluginCommInfo extends CommPlugin {
+export interface PluginCommInfo extends CommPlugin {
     groupCommInfo: PluginCommGroupInfo;
     downloads: number;
     updated: number;

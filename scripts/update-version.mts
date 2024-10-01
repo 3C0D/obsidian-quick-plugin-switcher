@@ -45,7 +45,7 @@ function updateVersion() {
                 }
         }
 
-        await updateManifestVersions(targetVersion!);
+        await updateManifestVersions(targetVersion as string);
 
         // Git add, commit et push
         execSync(`git add -A && git commit -m "Updated to version ${targetVersion}" && git push`);
@@ -56,23 +56,23 @@ function updateVersion() {
 
 async function updateManifestVersions(targetVersion: string) {
     // Read minAppVersion from manifest.json and bump version to target version
-    let manifest = JSON.parse(await readFile("manifest.json", "utf8"));
+    const manifest = JSON.parse(await readFile("manifest.json", "utf8"));
     const { minAppVersion } = manifest;
     manifest.version = targetVersion;
     await writeFile("manifest.json", JSON.stringify(manifest, null, "\t"));
 
     // Update versions.json with target version and minAppVersion from manifest.json
-    let versions = JSON.parse(await readFile("versions.json", "utf8"));
+    const versions = JSON.parse(await readFile("versions.json", "utf8"));
     versions[targetVersion] = minAppVersion;
     await writeFile("versions.json", JSON.stringify(versions, null, "\t"));
 
     // Update package.json
-    let packageJsn = JSON.parse(await readFile("package.json", "utf8"));
+    const packageJsn = JSON.parse(await readFile("package.json", "utf8"));
     packageJsn.version = targetVersion;
     await writeFile("package.json", JSON.stringify(packageJsn, null, "\t"));
 
     // Update package-lock.json
-    let packageLockJsn = JSON.parse(await readFile("package-lock.json", "utf8"));
+    const packageLockJsn = JSON.parse(await readFile("package-lock.json", "utf8"));
     packageLockJsn.version = targetVersion;
     await writeFile("package-lock.json", JSON.stringify(packageLockJsn, null, "\t"));
 }

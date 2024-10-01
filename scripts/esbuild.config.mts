@@ -3,10 +3,7 @@ import process from "process";
 import builtins from "builtin-modules";
 import { config } from 'dotenv';
 import manifest from "../manifest.json" assert { type: "json" };
-import { copyFilesToTargetDir, removeMainCss } from "./utils.mts";
-import { sassPlugin } from 'esbuild-sass-plugin'
-import glob from 'glob';
-
+import { copyFilesToTargetDir } from "./utils.mts";
 
 config();
 
@@ -40,16 +37,9 @@ switch (REAL) {
 }
 
 const entryPoints = ['src/main.ts'];
-const scssFiles = glob.sync('src/**/*.scss');
-
-if (scssFiles.length) {
-	entryPoints.push(...scssFiles);
-}
-
-const isScss = (!!(scssFiles.length > 0));
 
 if (!prod) {
-	await copyFilesToTargetDir(vaultDir, isScss, manifest.id, REAL);
+	await copyFilesToTargetDir(vaultDir, false, manifest.id, REAL);
 }
 
 const context = await esbuild.context({
@@ -74,22 +64,6 @@ const context = await esbuild.context({
 		"@lezer/highlight",
 		"@lezer/lr",
 		...builtins],
-	plugins: [
-		sassPlugin({
-			syntax: 'scss',
-			style: 'expanded',
-		}),
-		{
-			name: 'remove-main-css',
-			setup(build) {
-				build.onEnd(async (result) => {
-					if (result.errors.length === 0) {
-						await removeMainCss(outdir);
-					}
-				});
-			},
-		},
-	],
 	format: "cjs",
 	target: "es2018",
 	logLevel: "info",
@@ -102,10 +76,10 @@ const context = await esbuild.context({
 if (prod) {
 	await context.rebuild();
 	if (REAL === "1") {
-		await copyFilesToTargetDir(vaultDir, isScss, manifest.id, REAL);
+		await copyFilesToTargetDir(vaultDir, false, manifest.id, REAL);
 	}
 	process.exit(0);
 } else {
-	await copyFilesToTargetDir(vaultDir, isScss, manifest.id, REAL);
+	await copyFilesToTargetDir(vaultDir, false, manifest.id, REAL);
 	await context.watch();
 }

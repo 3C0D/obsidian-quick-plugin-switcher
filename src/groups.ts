@@ -365,7 +365,7 @@ export function addRemoveItemGroupMenuItems(
         const getGroup =
             isQPS ? (pluginItem as PluginInstalled).groupInfo?.groupIndices.indexOf(groupIndex) !== -1 : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
-            let value = alt ? `remove ${groupValue}` : `${groupValue}`
+            const value = alt ? `remove ${groupValue}` : `${groupValue}`
             submenu.addItem((subitem) => {
                 subitem.setTitle(value).onClick(async () => {
                     const indexes = isQPS ? (pluginItem as PluginInstalled).groupInfo?.groupIndices : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices
@@ -384,18 +384,15 @@ const getGroupIndexLength = (modal: QPSModal | CPModal, groupKey: string) => {
     const groupIndex = getIndexFromSelectedGroup(groupKey);
     const { settings } = modal.plugin;
     const { installed, commPlugins } = settings
-    let lengthGroup, groupValue;
-    if (modal instanceof QPSModal) {
-        lengthGroup = Object.keys(installed).filter(
-            (id) => installed[id].groupInfo.groupIndices.indexOf(groupIndex) !== -1
-        ).length;
-        groupValue = Groups[groupKey as keyof typeof Groups];
-    } else {
-        lengthGroup = Object.keys(commPlugins).filter(
-            (id) => commPlugins[id].groupCommInfo.groupIndices.indexOf(groupIndex) !== -1
-        ).length;
-        groupValue = GroupsComm[groupKey as keyof typeof GroupsComm];
+    const { lengthGroup, groupValue } = modal instanceof QPSModal
+    ? {
+        lengthGroup: Object.keys(installed).filter(id => installed[id].groupInfo.groupIndices.indexOf(groupIndex) !== -1).length,
+        groupValue: Groups[groupKey as keyof typeof Groups]
     }
+    : {
+        lengthGroup: Object.keys(commPlugins).filter(id => commPlugins[id].groupCommInfo.groupIndices.indexOf(groupIndex) !== -1).length,
+        groupValue: GroupsComm[groupKey as keyof typeof GroupsComm]
+    };
 
     return { groupIndex, lengthGroup, groupValue };
 };
@@ -587,7 +584,7 @@ export function groupIsEmpty(groupIndex: number, modal: QPSModal | CPModal) {
 }
 
 export function groupNameFromIndex(groups: StringString, index: number) {
-    for (let key in groups) {
+    for (const key in groups) {
         if (key.endsWith(index.toString())) {
             return key;
         }

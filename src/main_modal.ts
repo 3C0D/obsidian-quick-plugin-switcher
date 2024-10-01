@@ -225,7 +225,7 @@ export class QPSModal extends Modal {
 			},
 			(el) => {
 				el.createSpan({ text: "(g)" }, (el) => {
-					let gitHubIcon = el.createSpan({ cls: "git-hub-icon" });
+					const gitHubIcon = el.createSpan({ cls: "git-hub-icon" });
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
@@ -243,48 +243,35 @@ export class QPSModal extends Modal {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { installed, filters } = settings;
-		// const previousValue = settings.search;
-		let listItems = doSearchQPS(this, value, installed)
-		listItems = modeSort(this, plugin, listItems);
-		// Sort for chosen mode
-		// toggle plugin
-		for (const id of listItems) {
-			// don't show hiddens except if Filters.byGroup
-			if (filters !== Filters.byGroup && installed[id].groupInfo.hidden === true && filters !== Filters.hidden) {
-				continue
-			}
-			// don't filter enabled/disabled if Filters.Enabled/Disabled
-			if (
-				(filters === Filters.enabled && !installed[id].enabled) ||
-				(filters === Filters.disabled && installed[id].enabled)
-			) {
-				continue;
-			}
 
-			// create items
-			let itemContainer = this.items.createEl("div", {
-				cls: "qps-item-line",
-			});
-			
-			
+		let listItems = doSearchQPS(this, value, installed);
+		listItems = modeSort(this, plugin, listItems);
+
+		const itemsToShow = listItems.filter(id => {
+			if (filters !== Filters.byGroup && installed[id].groupInfo.hidden && filters !== Filters.hidden) {
+				return false;
+			}
+			if (filters === Filters.enabled && !installed[id].enabled) {
+				return false;
+			}
+			if (filters === Filters.disabled && installed[id].enabled) {
+				return false;
+			}
+			return true;
+		});
+
+		itemsToShow.forEach(id => {
+			const itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
 			itemTogglePluginButton(this, installed[id], itemContainer);
 			const input = itemTextComponent(installed[id], itemContainer);
 			itemContainer.setAttribute('data-plugin-id', id);
 			itemToggleClass(this, installed[id], itemContainer);
-			// create groups circles
 			addGroupCircles(input, installed[id]);
-			if (this.app.isMobile) {
-				const div = itemContainer.createEl(
-					"div",
-					{
-						cls: "button-container",
-					},
-					(el) => {
-						vertDotsButton(el);
-					})
 
+			if (this.app.isMobile) {
+				itemContainer.createEl("div", { cls: "button-container" }, el => vertDotsButton(el));
 			}
-		}
+		});
 	}
 
 	addDelay = async (id: string, input: HTMLInputElement) => {
@@ -335,7 +322,7 @@ const itemTogglePluginButton = (
 		|| pluginItem.target === TargetPlatform.Desktop && Platform.isMobile
 	const desktopOnlyOff = (pluginItem.isDesktopOnly && Platform.isMobile) ||
 		platformOff
-	let disable = ((pluginItem.id === "quick-plugin-switcher") || desktopOnlyOff || platformOff) ?? false;
+	const disable = ((pluginItem.id === "quick-plugin-switcher") || desktopOnlyOff || platformOff) ?? false;
 	const enabled = desktopOnlyOff ? false : pluginItem.enabled
 	new ToggleComponent(itemContainer)
 		.setValue(enabled)

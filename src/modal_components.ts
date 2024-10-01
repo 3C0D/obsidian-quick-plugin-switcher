@@ -1172,12 +1172,7 @@ async function contextMenuQPS(
 			let disabled = false
 			disabled = matchingItem.id === "quick-plugin-switcher"
 
-			if (!matchingItem.dir) {
-				disabled = true
-			}
-			const filePath = modal.app.vault.adapter.getFullPath(
-				matchingItem.dir!
-			);
+			const filePath = modal.app.vault.adapter.getFullPath(matchingItem.dir ?? "");
 			if (!filePath) disabled = true
 			if (Platform.isDesktop) {
 				const isDevPath = path.join(
@@ -1308,6 +1303,7 @@ export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalle
 	}
 
 	const manifest = await getManifest(modal, id);
+	if (!manifest) return
 	const hasRelease = await getReleaseVersion(modal, id, manifest)
 	const lastVersion = manifest.version
 

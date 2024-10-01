@@ -283,7 +283,7 @@ export class ReadMeModal extends Modal {
 
 		if (Platform.isDesktop) {
 			shortcuts.createSpan({
-				text: " (t) translate  (n) add note"
+				text: " (t) translate  (n) add note  (g) gitHub repo",
 			})
 		}
 
@@ -314,8 +314,10 @@ export class ReadMeModal extends Modal {
 			await translation(selectedContent);
 		});
 
-		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem))
+		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem)),
 
+		this.scope.register([], "g", async (e) => await openGitHubRepo(e, this.modal, pluginItem)),
+			
 		this.scope.register([], "escape", async (event) => {
 			this.close();
 		});

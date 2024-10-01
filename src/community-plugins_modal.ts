@@ -412,13 +412,19 @@ export class CPModal extends Modal {
 	}
 }
 
-export async function fetchData(url: string) {
+export async function fetchData(url: string, message?: string) {
 	try {
 		const response = await requestUrl(url);
-		const data = await response.json;
-		if (data) return data;
+		if (response.status !== 200) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		return response.json;
 	} catch (error) {
-		// console.warn(`Error fetching data from ${url}:`);
+		if (message) {
+			console.warn(message, error);
+		} else {
+			console.warn(`Error fetching data from ${url}:`, error);
+		}
 		return null;
 	}
 }
@@ -426,39 +432,34 @@ export async function fetchData(url: string) {
 export async function getReadMe(item: PluginCommInfo) {
 	const repo = item.repo;
 	const readmeFormats = ['README.md', 'README.org'];
+
 	for (const format of readmeFormats) {
 		const repoURL = `https://api.github.com/repos/${repo}/contents/${format}`;
 		try {
 			const response = await requestUrl(repoURL);
 			if (response.status === 200) {
-				return await response.json;
-			}
-			if (format === 'README.md') {
-				break; // Stop searching if README.md is found
+				return response.json;
 			}
 		} catch (error) {
-			console.warn(`Error fetching ${format}`);
+			null
+			// console.warn(`Error fetching ${format} for ${repo}:`, error);
 		}
 	}
+
+	console.warn(`No README found for ${repo}`);
 	return null;
 }
 
-export async function getManifest(modal: CPModal | QPSModal, id: string) {
+export async function getManifest(modal: CPModal | QPSModal, id: string): Promise<PluginManifest | null> {
 	// todo check if last release is ok same manifest version
 	const { commPlugins } = modal.plugin.settings
 	const repo = commPlugins[id]?.repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/HEAD/manifest.json`;
 
-	try {
-		const response = await requestUrl(repoURL);
-		return await response.json;
-	} catch (error) {
-		console.warn("Error fetching manifest");
-	}
-	return null;
+	return fetchData(repoURL, `Error fetching manifest for ${id}:`);
 }
 
-export async function getReleaseVersion(modal: CPModal | QPSModal, id: string, manifest: PluginManifest) {
+export async function getReleaseVersion(modal: CPModal | QPSModal, id: string, manifest: PluginManifest): Promise<boolean> {
 	const { commPlugins } = modal.plugin.settings
 	const repo = commPlugins[id].repo;
 	// manifest.version = "100.0.0" //debug
@@ -475,10 +476,7 @@ export async function getReleaseVersion(modal: CPModal | QPSModal, id: string, m
 	}
 }
 
-function sortItemsBy(
-	modal: CPModal,
-	listItems: string[],
-) {
+function sortItemsBy(modal: CPModal, listItems: string[]) {
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
 	if (settings.sortBy === "Downloads") {
@@ -569,11 +567,7 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 	}
 };
 
-const handleHotkeysCPM = async (
-	modal: CPModal,
-	evt: KeyboardEvent,
-	pluginItem: PluginCommInfo
-) => {
+const handleHotkeysCPM = async (modal: CPModal, evt: KeyboardEvent, pluginItem: PluginCommInfo) => {
 	if (modal.pressed) {// with press delay...
 		return;
 	}
@@ -653,11 +647,7 @@ const handleHotkeysCPM = async (
 	}
 };
 
-const addGroupCircles = (
-	modal: CPModal,
-	el: HTMLElement,
-	item: string
-) => {
+const addGroupCircles = (modal: CPModal, el: HTMLElement, item: string) => {
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
 	const indices = commPlugins[item].groupCommInfo.groupIndices;
@@ -741,10 +731,7 @@ export async function getPluginsList(modal: CPModal, enable = false) {
 	}
 }
 
-export async function installPluginFromOtherVault(
-	modal: CPModal,
-	enable = false
-) {
+export async function installPluginFromOtherVault(modal: CPModal, enable = false) {
 	const dirPath: string[] = window.electron.remote.dialog.showOpenDialogSync({
 		title: "Select your vault directory, you want plugins list from",
 		properties: ["openDirectory"],

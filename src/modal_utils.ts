@@ -36,15 +36,13 @@ export const sortSwitched = (plugin: Plugin, listItems: string[]) => {
 	listItems.sort((a, b) => installed[b].switched - installed[a].switched);
 };
 
-export const getCommandCondition = async function (
-	modal: QPSModal | CPModal,
-	item: PluginInstalled | PluginCommInfo
-) {
-	const pluginCommands = await modal.app.setting.openTabById(
-		item.id
-	)?.app?.commands.commands;
-	return pluginCommands;
-};
+// export const getCommandCondition = async function (modal: QPSModal | CPModal, item: PluginInstalled | PluginCommInfo
+// ): Promise<Record<string, Command> | undefined> {
+// 	const pluginCommands = await modal.app.setting.openTabById(
+// 		item.id
+// 	)?.app?.commands.commands;
+// 	return pluginCommands;
+// };
 
 export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInstalled) => {
 	const { plugin } = modal;
@@ -108,50 +106,34 @@ export const selectValue = (input: HTMLInputElement | null) => {
 export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) => {
 	const { settings } = plugin;
 	const { installed, filters } = settings;
-	// after reset MostSwitched
+	const sortByName = (a: string, b: string) => installed[a].name.localeCompare(installed[b].name);
+	// const sortBySwitched = (a: string, b: string) => installed[b].switched - installed[a].switched;
+
 	if (plugin.reset) {
-		listItems.forEach((id) => {
-			installed[id].switched = 0;
-		});
+		listItems.forEach(id => installed[id].switched = 0);
 		plugin.reset = false;
 	}
-	// EnabledFirst
-	if (filters === Filters.enabledFirst) {
-		const enabledItems = listItems.filter((id) => installed[id].enabled);
-		const disabledItems = listItems.filter((id) => !installed[id].enabled);
-		sortByName(plugin, enabledItems);
-		sortByName(plugin, disabledItems);
-		listItems = [...enabledItems, ...disabledItems];
-	}
-	// ByGroup
-	else if (filters === Filters.byGroup) {
-		const groupIndex = getIndexFromSelectedGroup(
-			settings.selectedGroup
-		);
-		if (groupIndex !== 0) {
-			const groupedItems = listItems.filter((i) => {
-				return installed[i].groupInfo.groupIndices.indexOf(groupIndex) !== -1;
-			});
-			listItems = groupedItems;
-			sortByName(plugin, listItems);
-		} else {
-			sortByName(plugin, listItems);
-		}
-	}
-	// MostSwitched
-	else if (filters === Filters.mostSwitched) {
-		// && !plugin.reset
-		sortByName(plugin, listItems);
-		sortSwitched(plugin, listItems);
-	} else if (filters === Filters.hidden) {
-		return getHidden(modal, listItems) as string[];
-	}
-	// All
-	else {
-		sortByName(plugin, listItems);
-	}
 
-	return listItems;
+	const sortFunctions = {
+		[Filters.enabledFirst]: () => {
+			const [enabled, disabled] = listItems.reduce((acc, id) => {
+				acc[installed[id].enabled ? 0 : 1].push(id);
+				return acc;
+			}, [[], []] as [string[], string[]]);
+			return [...enabled.sort(sortByName), ...disabled.sort(sortByName)];
+		},
+		[Filters.byGroup]: () => {
+			const groupIndex = getIndexFromSelectedGroup(settings.selectedGroup);
+			return groupIndex !== 0
+				? listItems.filter(i => installed[i].groupInfo.groupIndices.includes(groupIndex)).sort(sortByName)
+				: listItems.sort(sortByName);
+		},
+		[Filters.mostSwitched]: () => listItems.sort((a, b) => installed[b].switched - installed[a].switched || sortByName(a, b)),
+		[Filters.hidden]: () => getHidden(modal, listItems),
+		[Filters.all]: () => listItems.sort(sortByName),
+	};
+
+	return (sortFunctions[filters] || sortFunctions[Filters.all])();
 };
 
 export function createInput(el: HTMLElement | null, currentValue: string) {
@@ -259,44 +241,66 @@ export const showHotkeysFor = async function (
 	tab.searchComponent.inputEl.blur();
 };
 
-export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
-	// <div align="center" > <img src="./screenshots/book.png" width = "677" /> </div>
-	const ImgSrc = /(<img\s[^>]*src="\s*)(\.?\/?[^"]+)"[^>]*>/gi;
-	content = content.replace(ImgSrc, (match, alt, url) => {
+
+export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): string {
+	const baseUrl = `https://raw.githubusercontent.com/${pluginItem.repo}/master/`;
+
+	// add space before closing quote
+	content = content.replace(/(?!href=\s*)(["'])(https?:\/\/[^"'\s]+)(["'])/g, (match, openChar, url, closeChar) => {
+		return `${openChar}${url} ${closeChar}`; // Adds a space before the closing character
+	});
+
+	const ImgSrc = /<img\s[^>]*src="(\.?\/?[^"]+)"[^>]*>/gi;
+	content = content.replace(ImgSrc, (match, url) => {
+		const widthMatch = match.match(/(?:width\s*=\s*["']?)(\d+)(px)?["']?/i);
+		const heightMatch = match.match(/(?:height\s*=\s*["']?)(\d+)(px)?["']?/i);
+
+		const width = widthMatch ? widthMatch[1] : null;
+		const height = heightMatch ? heightMatch[1] : null;
+
 		if (!url.startsWith("http")) {
 			if (url.startsWith(".")) {
 				url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
-			}
-			else {
+			} else {
 				url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 			}
-		} else {
-			return match
 		}
 
-		return `${alt}${url}"`;
+		let mdImage = `![Image](${url.trim()})`;
+
+		if (width && height) {
+			mdImage = `![Image|${width}x${height}](${url.trim()})`;
+		} else if (width) {
+			mdImage = `![Image|${width}](${url.trim()})`;
+		} else if (height) {
+			mdImage = `![Image|${height}](${url.trim()})`;
+		}
+
+		return mdImage;
 	});
 
-	// ![windows](img / main_windows.jpg)
-	const imgRegex = /!\[([^\]]*)\]\(([^)]*)\)/g;
-	content = content
-		.replace(imgRegex, (match, alt, url) => {
-			if (!url.startsWith("http")) {
-				if (url.startsWith(".")) {
-					url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
-				} else {
-					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
-				}
-			} else {
-				return match
-			}
-			return `![${alt}](${url})`;
-		})
 
-	content = content.replace(/\/blob\/master/g, "/raw/HEAD")
+	// [](url) ![](url)
+	content = content.replace(/(!?)\[(.*?)\]\(((?!http).*?)\)/g, (match, exclamation, textOrAlt, link) => {
+		if (!link.startsWith("/") && !link.startsWith("#")) {
+			return `${exclamation}[${textOrAlt}](${baseUrl}${link})`;
+		}
+		return match;
+	});
 
-	return content
+	// Modify absolute GitHub links to raw content
+	content = content.replace(
+		/https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.*?)\.(png|jpg|gif|svg)/g,
+		(match, user, repo, path, ext) => {
+			return `https://raw.githubusercontent.com/${user}/${repo}/${path}.${ext}`;
+		}
+	);
+
+	// console.log("content", content);
+
+	return content;
 }
+
 
 export function getElementFromMousePosition(
 	modal: QPSModal | CPModal
