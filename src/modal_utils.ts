@@ -243,60 +243,70 @@ export const showHotkeysFor = async function (
 
 
 export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): string {
-	const baseUrl = `https://raw.githubusercontent.com/${pluginItem.repo}/master/`;
+	const baseUrl = `https://githubusercontent.com/${pluginItem.repo}/raw/HEAD/`;
 
 	// add space before closing quote
-	content = content.replace(/(?!href=\s*)(["'])(https?:\/\/[^"'\s]+)(["'])/g, (match, openChar, url, closeChar) => {
+	content = content.replace(/(?!href=\s*)(["'])(https?:\/\/[^"'\s]+)(["'])/g, (_, openChar, url, closeChar) => {
 		return `${openChar}${url} ${closeChar}`; // Adds a space before the closing character
 	});
 
-	const ImgSrc = /<img\s[^>]*src="(\.?\/?[^"]+)"[^>]*>/gi;
-	content = content.replace(ImgSrc, (match, url) => {
-		const widthMatch = match.match(/(?:width\s*=\s*["']?)(\d+)(px)?["']?/i);
-		const heightMatch = match.match(/(?:height\s*=\s*["']?)(\d+)(px)?["']?/i);
+	const normalizeUrl = (url: string): string => {
+		if (url.startsWith("http")) return url;
+		return url.startsWith(".")
+			? `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`
+			: `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
+	};
 
-		const width = widthMatch ? widthMatch[1] : null;
-		const height = heightMatch ? heightMatch[1] : null;
+	const extractDimensions = (match: string) => {
+		const getDimension = (type: string): number | null => {
+			const patterns = [
+				// style="width: 100px" or style="width: 100"
+				new RegExp(`style=["'][^"']*${type}\\s*:\\s*(\\d+)(?:px|em|rem|%)?\\s*(!important)?["']`, 'i'),
+				// width="100px", width='100' or width=100
+				new RegExp(`${type}\\s*=\\s*["']?(\\d+)(?:px|em|rem|%)?["']?(?:\\s|>)`, 'i')
+			];
 
-		if (!url.startsWith("http")) {
-			if (url.startsWith(".")) {
-				url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
-			} else {
-				url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
+			for (const pattern of patterns) {
+				const newMatch = pattern.exec(match);
+				if (newMatch && newMatch[1]) {
+					return parseInt(newMatch[1], 10);
+				}
 			}
-		}
+			return null;
+		};
 
-		let mdImage = `![Image](${url.trim()})`;
+		return {
+			width: getDimension('width'),
+			height: getDimension('height')
+		};
+	};
 
-		if (width && height) {
-			mdImage = `![Image|${width}x${height}](${url.trim()})`;
-		} else if (width) {
-			mdImage = `![Image|${width}](${url.trim()})`;
-		} else if (height) {
-			mdImage = `![Image|${height}](${url.trim()})`;
-		}
+	// images
+	content = content.replace(/<img[^>]*src=["']?(\.?\/?[^"'\s]+)["']?[^>]*>/gi, (match, url) => {
+		const normalizedUrl = normalizeUrl(url.trim());
+		const { width, height } = extractDimensions(match);
 
-		return mdImage;
+		const altMatch = match.match(/alt=["']([^"']*)["']/i);
+		const alt = altMatch ? altMatch[1] : 'Image';
+
+		if (width && height) return `![${alt}|${width}x${height}](${normalizedUrl})`;
+		if (width) return `![${alt}|${width}](${normalizedUrl})`;
+		if (height) return `![${alt}|${height}](${normalizedUrl})`;
+		return `![${alt}](${normalizedUrl})`;
 	});
-
 
 	// [](url) ![](url)
-	content = content.replace(/(!?)\[(.*?)\]\(((?!http).*?)\)/g, (match, exclamation, textOrAlt, link) => {
-		if (!link.startsWith("/") && !link.startsWith("#")) {
-			return `${exclamation}[${textOrAlt}](${baseUrl}${link})`;
-		}
-		return match;
-	});
-
-	// Modify absolute GitHub links to raw content
-	content = content.replace(
-		/https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.*?)\.(png|jpg|gif|svg)/g,
-		(match, user, repo, path, ext) => {
-			return `https://raw.githubusercontent.com/${user}/${repo}/${path}.${ext}`;
-		}
+	// Modifier les liens relatifs dans les markdown
+	content = content.replace(/(!?)\[(.*?)\]\(((?!http)(?!#)(?!\/).*?)\)/g,
+		(_, isImage, text, link) => `${isImage}[${text}](${baseUrl}${link})`
 	);
 
-	// console.log("content", content);
+    // github links
+    content = content.replace(
+        /https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)\.(png|jpe?g|gif|svg|webp)/gi,
+        (_, user, repo, branch, path, ext) => 
+            `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${path}.${ext}`
+    );
 
 	return content;
 }
