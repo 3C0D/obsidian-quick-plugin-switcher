@@ -1,1 +1,1 @@
-code improvements
+code to open readme in community plugins optimized
