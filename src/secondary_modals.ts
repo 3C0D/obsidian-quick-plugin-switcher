@@ -16,7 +16,7 @@ import { isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHo
 import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
-import { PluginCommInfo, PluginInstalled } from "./global";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 
 // for plugin description
 export class DescriptionModal extends Modal {
@@ -50,12 +50,11 @@ export class DescriptionModal extends Modal {
 			});
 
 		let desc;	
-		Object.values(this.plugin.settings.commPlugins).forEach((item) => {
+		Object.values(this.plugin.settings.commPlugins).forEach((item: PluginCommInfo) => {
 			if (item.id === pluginItem.id) {
 				desc = item.description;
 			}
-		})
-		
+		});
 		desc = desc ? desc : pluginItem.description;
 		contentEl.createEl("p", { text: desc });
 	}
@@ -317,7 +316,7 @@ export class ReadMeModal extends Modal {
 		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem)),
 
 		this.scope.register([], "g", async (e) => await openGitHubRepo(e, this.modal, pluginItem)),
-			
+
 		this.scope.register([], "escape", async (event) => {
 			this.close();
 		});
@@ -357,7 +356,7 @@ export class SeeNoteModal extends Modal {
 
 	onOpen() {
 		const { contentEl: El } = this;
-		El.createEl('h6', { text: "DON'T INCLUDE H1 titles. To delete a note delete all content.", cls: "read-me-shortcuts " })
+		El.createEl('h6', { text: "Don't include H1 titles. To delete a note delete all content. Saved on close.", cls: "read-me-shortcuts " })
 		El.createEl('h3', { text: this.pluginItem.name + " by " + this.pluginItem.author })
 		new Setting(El)
 			.addTextArea((text) => {

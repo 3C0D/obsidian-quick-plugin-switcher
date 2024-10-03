@@ -4,12 +4,12 @@ import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import { QPSSettingTab } from "./settings";
 import { fetchData, updateNotes } from "./community-plugins_modal";
-import { PluginCommInfo, PluginInstalled, QPSSettings } from "./global";
+import { PluginCommInfo, PluginInstalled, QPSSettings } from "./types/global";
 import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters, TargetPlatform } from './types/variables';
 import { focusSearchInput } from './modal_utils';
 import { addCommandToPlugin } from './modal_components';
 
-// ajouter github raccourci dans readme
+// si fichier notes n'existe pas. enlever la classe verte sur tout les plugins notés
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
@@ -26,12 +26,12 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	private async initializePlugin() {
-        this.settings.savedVersion = this.manifest.version;
-        await this.updateInstalledPlugins();
+		this.settings.savedVersion = this.manifest.version;
+		await this.updateInstalledPlugins();
 		await this.setupPluginWrappers();
-        await this.syncEnabled();
-        await this.handleDelayedPlugins();
-    }
+		await this.syncEnabled();
+		await this.handleDelayedPlugins();
+	}
 
 	async updateInstalledPlugins() {
 		const installed = this.settings.installed || {};
@@ -134,7 +134,9 @@ export default class QuickPluginSwitcher extends Plugin {
 		new QPSModal(this.app, this).open();
 		focusSearchInput(10);
 		await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
-		setTimeout(() => updateNotes(this), 700);
+		setTimeout(async() => {
+			await updateNotes(this)
+		}, 700);
 	}
 
 	wrapDisableEnablePluginAndSave(stillInstalled: string[], cb: () => Promise<void>) {

@@ -6,7 +6,7 @@ import { CPModal } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
-import { PluginCommInfo, PluginInstalled } from "./global";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 
 /**
  * Reset most switched values.
@@ -104,36 +104,35 @@ export const selectValue = (input: HTMLInputElement | null) => {
 };
 
 export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) => {
-	const { settings } = plugin;
-	const { installed, filters } = settings;
-	const sortByName = (a: string, b: string) => installed[a].name.localeCompare(installed[b].name);
-	// const sortBySwitched = (a: string, b: string) => installed[b].switched - installed[a].switched;
+  const { settings } = plugin;
+  const { installed, filters } = settings;
+  const sortByName = (a: string, b: string) => installed[a].name.localeCompare(installed[b].name);
 
-	if (plugin.reset) {
-		listItems.forEach(id => installed[id].switched = 0);
-		plugin.reset = false;
-	}
+  if (plugin.reset) {
+    listItems.forEach(id => installed[id].switched = 0);
+    plugin.reset = false;
+  }
 
-	const sortFunctions = {
-		[Filters.enabledFirst]: () => {
-			const [enabled, disabled] = listItems.reduce((acc, id) => {
-				acc[installed[id].enabled ? 0 : 1].push(id);
-				return acc;
-			}, [[], []] as [string[], string[]]);
-			return [...enabled.sort(sortByName), ...disabled.sort(sortByName)];
-		},
-		[Filters.byGroup]: () => {
-			const groupIndex = getIndexFromSelectedGroup(settings.selectedGroup);
-			return groupIndex !== 0
-				? listItems.filter(i => installed[i].groupInfo.groupIndices.includes(groupIndex)).sort(sortByName)
-				: listItems.sort(sortByName);
-		},
-		[Filters.mostSwitched]: () => listItems.sort((a, b) => installed[b].switched - installed[a].switched || sortByName(a, b)),
-		[Filters.hidden]: () => getHidden(modal, listItems),
-		[Filters.all]: () => listItems.sort(sortByName),
-	};
+  const sortFunctions: { [key: string]: () => string[] } = {
+    [Filters.enabledFirst]: () => {
+      const [enabled, disabled] = listItems.reduce((acc, id) => {
+        acc[installed[id].enabled ? 0 : 1].push(id);
+        return acc;
+      }, [[], []] as [string[], string[]]);
+      return [...enabled.sort(sortByName), ...disabled.sort(sortByName)];
+    },
+    [Filters.byGroup]: () => {
+      const groupIndex = getIndexFromSelectedGroup(settings.selectedGroup);
+      return groupIndex !== 0
+        ? listItems.filter(i => installed[i].groupInfo.groupIndices.includes(groupIndex)).sort(sortByName)
+        : listItems.sort(sortByName);
+    },
+    [Filters.mostSwitched]: () => listItems.sort((a, b) => installed[b].switched - installed[a].switched || sortByName(a, b)),
+    [Filters.hidden]: () => getHidden(modal, listItems),
+    [Filters.all]: () => listItems.sort(sortByName),
+  };
 
-	return (sortFunctions[filters] || sortFunctions[Filters.all])();
+  return (sortFunctions[filters] || sortFunctions[Filters.all])();
 };
 
 export function createInput(el: HTMLElement | null, currentValue: string) {
@@ -247,7 +246,7 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 
 	// add space before closing quote
 	content = content.replace(/(?!href=\s*)(["'])(https?:\/\/[^"'\s]+)(["'])/g, (_, openChar, url, closeChar) => {
-		return `${openChar}${url} ${closeChar}`; // Adds a space before the closing character
+		return `${openChar}${url} ${closeChar}`;
 	});
 
 	const normalizeUrl = (url: string): string => {
@@ -296,7 +295,6 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 	});
 
 	// [](url) ![](url)
-	// Modifier les liens relatifs dans les markdown
 	content = content.replace(/(!?)\[(.*?)\]\(((?!http)(?!#)(?!\/).*?)\)/g,
 		(_, isImage, text, link) => `${isImage}[${text}](${baseUrl}${link})`
 	);

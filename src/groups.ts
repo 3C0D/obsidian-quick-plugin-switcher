@@ -5,7 +5,7 @@ import { createInput, reOpenModal, conditionalEnable, isInstalled } from "./moda
 import { Filters, Groups, CommFilters, GroupsComm } from "./types/variables";
 import { removeItem } from "./utils";
 import { createClearGroupsMenuItem, hideOnCLick } from "./modal_components";
-import { PluginCommInfo, PluginInstalled, StringString } from "./global";
+import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
 
 export const byGroupDropdowns = (
     modal: QPSModal | CPModal,
@@ -250,7 +250,7 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
     for (const id of inGroup) {
         if (!isInstalled(id)) continue;
         await this.app.plugins.uninstallPlugin(id);
-        new Notice(`${commPlugins[id].name} uninstalled`, 2500);
+        new Notice(`${commPlugins[id].name} uninstalled`, 5000);
     }
     await reOpenModal(modal);
 }
@@ -265,7 +265,7 @@ export async function installAllPluginsInGroup(
     const { commPlugins } = settings
     for (const id of inGroup) {
         if (isInstalled(id)) {
-            new Notice(`${commPlugins[id].name} already installed`, 2500);
+            new Notice(`${commPlugins[id].name} already installed`, 5000);
             continue;
         }
         const manifest = await getManifest(modal, id);
@@ -274,7 +274,7 @@ export async function installAllPluginsInGroup(
         await this.app.plugins.installPlugin(commPlugins[id].repo, lastVersion, manifest);
         if (enable) {
             await modal.app.plugins.enablePluginAndSave(id);
-            new Notice(`${commPlugins[id].name} enabled`, 2500);
+            new Notice(`${commPlugins[id].name} enabled`, 5000);
         }
     }
     await reOpenModal(modal);

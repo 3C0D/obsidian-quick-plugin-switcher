@@ -38,7 +38,7 @@ import {
 } from "./community-plugins_modal";
 import { Filters, Groups, SortBy, TargetPlatform } from "./types/variables";
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
-import { PluginCommInfo, PluginInstalled } from "./global";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 import * as path from "path";
 import { existsSync } from "fs";
 import QuickPluginSwitcher from "./main";

@@ -1,5 +1,5 @@
 import 'obsidian'
-import { CommFilters, Filters, SortBy, TargetPlatform } from './types/variables';
+import { CommFilters, Filters, SortBy, TargetPlatform } from './variables';
 import { PluginManifest } from 'obsidian';
 
 declare module "obsidian" {

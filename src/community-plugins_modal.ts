@@ -51,7 +51,7 @@ import { QPSModal, circleCSSModif, toggleVisibility } from "./main_modal";
 import * as path from "path";
 import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin } from "./groups";
-import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./global";
+import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./types/global";
 import { translation } from "./translate";
 
 declare global {
@@ -476,62 +476,63 @@ export async function getReleaseVersion(modal: CPModal | QPSModal, id: string, m
 	}
 }
 
-function sortItemsBy(modal: CPModal, listItems: string[]) {
+
+function sortItemsBy(
+	modal: CPModal,
+	listItems: string[]
+) {
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
-	if (settings.sortBy === "Downloads") {
-		listItems.sort((a, b) => {
-			return settings.invertFiltersComm ? commPlugins[a].downloads - commPlugins[b].downloads : commPlugins[b].downloads - commPlugins[a].downloads;
-		});
-	} else if (settings.sortBy === "Updated") {
-		listItems.sort((a, b) => {
-			return settings.invertFiltersComm ? commPlugins[a].updated - commPlugins[b].updated : commPlugins[b].updated - commPlugins[a].updated;
-		});
+	const { sortBy } = settings;
 
-	} else if (settings.sortBy === "Alpha") {
-		listItems.sort((a, b) => {
-			return settings.invertFiltersComm ? commPlugins[b].name.localeCompare(commPlugins[a].name) : commPlugins[a].name.localeCompare(commPlugins[b].name);
-		})
-	} else if (settings.sortBy === "Released") {
-		listItems.sort((a, b) => {
+	const sortFunctions: { [key: string]: () => string[] } = {
+		'Downloads': () => listItems.sort((a, b) => {
+			return settings.invertFiltersComm ? commPlugins[a].downloads - commPlugins[b].downloads : commPlugins[b].downloads - commPlugins[a].downloads;
+		}),
+		'Updated': () => listItems.sort((a, b) => settings.invertFiltersComm ? commPlugins[a].updated - commPlugins[b].updated : commPlugins[b].updated - commPlugins[a].updated),
+		'Alpha': () => listItems.sort((a, b) => settings.invertFiltersComm ? commPlugins[b].name.localeCompare(commPlugins[a].name) : commPlugins[a].name.localeCompare(commPlugins[b].name)),
+		'Released': () => listItems.sort((a, b) => {
 			const indexA = settings.plugins.findIndex((id: string) => id === commPlugins[a].id);
 			const indexB = settings.plugins.findIndex((id: string) => id === commPlugins[b].id);
 			return settings.invertFiltersComm ? indexA - indexB : indexB - indexA;
-		});
-	}
+		}),
+	};
+
+	return (sortFunctions[sortBy] || sortFunctions['Downloads'])();
 }
 
 function cpmModeSort(modal: CPModal, listItems: string[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm, commPlugins } = settings;
-	if (filtersComm === CommFilters.installed) {
-		const installedPlugins = getInstalled();
-		return listItems.filter((item) => installedPlugins.includes(item));
-	} else if (filtersComm === CommFilters.notInstalled) {
-		const installedPlugins = getInstalled();
-		return listItems.filter((item) => !installedPlugins.includes(item));
-	} else if (filtersComm === CommFilters.hasNote) {
-		const liste = listItems.filter((item) => commPlugins[item].hasNote)
-		return liste;
-	} else if (filtersComm === CommFilters.byGroup) {
-		const groupIndex = getIndexFromSelectedGroup(
-			settings.selectedGroup
-		);
-		if (groupIndex !== 0) {
-			const groupedItems = listItems.filter((i) => {
-				return commPlugins[i].groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
-			});
-			return groupedItems;
-		} else return listItems;
-	} else if (filtersComm === "hidden") {
-		return getHidden(modal, listItems);
-	} else if (filtersComm === "hasNote") {
-		return getHasNote(modal, listItems);
-	}
-	else {
-		return listItems;
-	}
+
+	const sortFunctions: { [key: string]: () => string[] } = {
+		[CommFilters.installed]: () => {
+			const installedPlugins = getInstalled();
+			return listItems.filter((item) => installedPlugins.includes(item));
+		},
+		[CommFilters.notInstalled]: () => {
+			const installedPlugins = getInstalled();
+			return listItems.filter((item) => !installedPlugins.includes(item));
+		},
+		[CommFilters.hasNote]: () => {
+			return listItems.filter((item) => commPlugins[item].hasNote);
+		},
+		[CommFilters.byGroup]: () => {
+			const groupIndex = getIndexFromSelectedGroup(settings.selectedGroup);
+			if (groupIndex !== 0) {
+				return listItems.filter((i) =>
+					commPlugins[i].groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1
+				);
+			}
+			return listItems;
+		},
+		[CommFilters.hidden]: () => getHidden(modal, listItems),
+		[CommFilters.all]: () => listItems,
+	};
+
+	return (sortFunctions[filtersComm] || sortFunctions[CommFilters.all])();
 }
+
 
 const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 	const elementFromPoint = getElementFromMousePosition(modal);
@@ -686,33 +687,42 @@ const addGroupCircles = (modal: CPModal, el: HTMLElement, item: string) => {
 };
 
 export async function installFromList(modal: CPModal, enable = false) {
+	const pluginList = await getPluginListFromFile();
+
+	if (pluginList) {
+		const plugins = Object.keys(modal.plugin.settings.commPlugins).filter(
+			(id) => pluginList.includes(id)
+		);
+		await installAllPluginsInGroup(modal, plugins, enable);
+	}
+}
+
+async function getPluginListFromFile(): Promise<string[] | null> {
 	const properties = ["openFile"];
 	const filePaths: string[] = window.electron.remote.dialog.showOpenDialogSync({
 		title: "Pick json list file of plugins to install",
 		properties,
-		filters: ["JsonList", "json"],
+		filters: [{ name: "JsonList", extensions: ["json"] }],
 	});
 
 	if (filePaths && filePaths.length) {
-		const contenu = readFileSync(filePaths[0], "utf-8");
-
 		try {
+			const contenu = readFileSync(filePaths[0], "utf-8");
 			const pluginList = JSON.parse(contenu);
 			if (Array.isArray(pluginList)) {
-				const plugins = Object.keys(modal.plugin.settings.commPlugins).filter(
-					(id) => {
-						return pluginList.includes(id);
-					}
-				);
-				await installAllPluginsInGroup(modal, plugins, enable);
+				return pluginList;
 			} else {
 				console.error("this file is not a JSON list.");
+				new Notice("Error: The selected file is not a valid JSON list.", 3000);
 			}
 		} catch (erreur) {
 			console.error("Error reading JSON file: ", erreur);
+			new Notice("Error: Could not read the selected JSON file.", 3000);
 		}
 	}
+	return null;
 }
+
 
 export async function getPluginsList(modal: CPModal, enable = false) {
 	const installed = getInstalled();
@@ -806,21 +816,27 @@ export async function updateNotes(plugin: QuickPluginSwitcher) {
 	const dir = plugin.settings.commPluginsNotesFolder;
 	const path = dir ? dir + "/" + name + ".md" : name + ".md";
 	const note = this.app.vault.getAbstractFileByPath(path) as TFile;
+
+	const { commPlugins } = plugin.settings;
+
 	if (note) {
-		const content = note ? await this.app.vault.read(note) : "";
+		// The note file exists, we update the hasNote values according to the content
+		const content = await this.app.vault.read(note);
 		const h1Titles: string[] = content.split('\n')
 			.filter((line: string) => line.startsWith('# '))
 			.map((line: string) => line.substring(2).trim());
-		const { commPlugins } = plugin.settings
-		Object.values(commPlugins).forEach((plugin: PluginCommInfo) => {
-			if (plugin.hasNote && !h1Titles.includes(plugin.name)) {
-				plugin.hasNote = false;
-			} else if (!plugin.hasNote && h1Titles.includes(plugin.name)) {
-				plugin.hasNote = true;
-			}
-		})
+
+		for (const plugin of Object.values(commPlugins)) {
+			plugin.hasNote = h1Titles.includes(plugin.name);
+		}
+	} else {
+		// The note file does not exist, we set all hasNote values to false
+		for (const item of Object.values(commPlugins)) {
+			item.hasNote = false;
+		}
 	}
 }
+
 
 export async function handleNote(e: KeyboardEvent | MouseEvent | TouchEvent, modal: CPModal, pluginItem: PluginCommInfo, _this?: ReadMeModal) {
 	const name = "Community plugins notes";
@@ -837,7 +853,6 @@ export async function handleNote(e: KeyboardEvent | MouseEvent | TouchEvent, mod
 		note = modal.app.vault.getFileByPath(path);
 	}
 	let content = note ? await modal.app.vault.read(note) : "";
-	const savedContent = content;
 	const sectionHeader = "# " + pluginItem.name;
 	const sectionIndex = content.indexOf(sectionHeader);
 	let sectionContent = "";
@@ -860,52 +875,66 @@ export async function handleNote(e: KeyboardEvent | MouseEvent | TouchEvent, mod
 	}
 
 	new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
-		await cb(result, modal, pluginItem, sectionContent, note as TFile, content, savedContent, _this)
+		await cb(result, modal, pluginItem, sectionContent, note as TFile, content, _this)
 	}, _this).open();
 }
 
-async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommInfo, sectionContent: string, note: TFile, content: string, savedContent: string, _this?: ReadMeModal) {
+async function cb(
+	result: string | null,
+	modal: CPModal,
+	pluginItem: PluginCommInfo,
+	sectionContent: string,
+	note: TFile,
+	content: string,
+	_this?: ReadMeModal
+) {
+	// Case 1: Result is null - Removes the section
 	if (result === null) {
 		const updatedContent = content.replace(sectionContent, "");
 		await modal.app.vault.modify(note, updatedContent);
-		content = await modal.app.vault.read(note);
-		return
+		return;
 	}
 
+	// Case 2: Result is empty - Removes the section and updates settings
 	if (result.trim() === "") {
-		let updatedContent = "";
-		const regexPattern = new RegExp("# " + pluginItem.name + "\n\n?" + sectionContent + "\n?", "g");
-		updatedContent = content.replace(regexPattern, "");
+		const regexPattern = new RegExp(`# ${pluginItem.name}\n\n?${escapeRegExp(sectionContent)}\n?`, "g");
+		const updatedContent = content.replace(regexPattern, "");
 		await modal.app.vault.modify(note, updatedContent);
-		pluginItem.hasNote = false;
-		await modal.plugin.saveSettings();
-		if (_this) {
-			_this.onOpen()
-			modal.searchInit = false;
-			modal.onOpen()
-		}
-		else {
-			modal.searchInit = false;
-			modal.onOpen()
-		}
-		return
+		await updatePluginSettings(modal, pluginItem, false);
+		reopenModals(modal, _this);
+		return;
 	}
 
+	// Case 3: Content is unchanged - Does nothing
 	if (sectionContent.trim() === result.trim()) {
-		return
-	} else {
-		if (!sectionContent) {
-			modal.app.vault.append(note, (result));
-		} else {
-			const updatedContent = content.replace(sectionContent, result);
-			await modal.app.vault.modify(note, updatedContent);
-		}
-		pluginItem.hasNote = true;
-		await modal.plugin.saveSettings();
-		if (_this) {
-			_this.onOpen()
-			modal.onOpen()
-		}
-		else modal.onOpen()
+		return;
 	}
+
+	// Case 4: Content is updated
+	if (!sectionContent) {
+		await modal.app.vault.append(note, result);
+	} else {
+		const updatedContent = content.replace(sectionContent, result);
+		await modal.app.vault.modify(note, updatedContent);
+	}
+
+	await updatePluginSettings(modal, pluginItem, true);
+	reopenModals(modal, _this);
+}
+
+async function updatePluginSettings(modal: CPModal, pluginItem: PluginCommInfo, hasNote: boolean) {
+	pluginItem.hasNote = hasNote;
+	await modal.plugin.saveSettings();
+}
+
+function reopenModals(modal: CPModal, _this?: ReadMeModal) {
+	if (_this) {
+		_this.onOpen();
+	}
+	modal.searchInit = false;
+	modal.onOpen();
+}
+
+function escapeRegExp(string: string) {
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

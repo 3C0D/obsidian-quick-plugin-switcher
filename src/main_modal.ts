@@ -42,7 +42,7 @@ import { DescriptionModal } from "./secondary_modals";
 import { Filters, Groups, TargetPlatform } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, rmvAllGroupsFromPlugin, groupIsEmpty, groupNbFromEmoticon, getPluginsInGroup, groupNbFromGrpName } from "./groups";
 import { CPModal } from "./community-plugins_modal";
-import { KeyToSettingsMapType, PluginInstalled } from "./global";
+import { KeyToSettingsMapType, PluginInstalled } from "./types/global";
 
 export class QPSModal extends Modal {
 	header: HTMLElement;

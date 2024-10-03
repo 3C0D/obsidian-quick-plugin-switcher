@@ -2,7 +2,7 @@ import { App, debounce, PluginSettingTab, Setting, SliderComponent } from "obsid
 import QuickPluginSwitcher from "./main";
 import { confirm } from "./secondary_modals";
 import { FolderSuggest } from "./suggester";
-import { PluginCommInfo, PluginInstalled } from "./global";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 
 export class QPSSettingTab extends PluginSettingTab {
     plugin: QuickPluginSwitcher;

@@ -33,8 +33,10 @@ export function formatNumber(num: number, precision = 3) {
     return num.toString();
 }
 
-
 export function calculateTimeElapsed(datePasted: Date): string {
+	if (isNaN(datePasted.getTime())) {
+		return "Invalid date";
+	}
 	const delta = Math.abs(new Date().getTime() - datePasted.getTime()) / 1000;
 
 	const years = Math.floor(delta / (86400 * 365));
@@ -93,8 +95,9 @@ export function base64ToUint8Array(base64: string) {
 	const binaryString = atob(base64);
 	const length = binaryString.length;
 	const bytes = new Uint8Array(length);
-	for (let i = 0; i < length; i++) {
-		bytes[i] = binaryString.charCodeAt(i);
+	let i = 0;
+	for (const charCode of binaryString) {
+		bytes[i++] = charCode.charCodeAt(0);
 	}
 	return bytes;
 }
