@@ -1,77 +1,67 @@
 import { writeFile, stat } from 'fs/promises';
 import { execSync } from 'child_process';
 import dedent from 'dedent';
-import * as readline from 'readline';
+import { askQuestion, createReadlineInterface } from './utils.mts';
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+const rl = createReadlineInterface();
 
-let exists, tag;
 const body = ".github/workflows/release-body.md"
 
 async function checkOrCreateFile(filename: string): Promise<void> {
     try {
-        try {
-            await stat(filename);
-        } catch {
-            console.log(`Creating ${filename} because it doesn't exist. avoid to delete it.`);
-            await writeFile(filename, '');
-        }
-    } catch (error) {
-        console.error('Error checking or creating file:', error.message);
+        await stat(filename);
+    } catch {
+        console.log(`Creating ${filename} because it doesn't exist. Avoid deleting it.`);
+        await writeFile(filename, '');
     }
 }
 
-async function createReleaseNotesFile(tagMessage: string) {
-    try {
-        await writeFile(body, tagMessage);
-        console.log(`Release notes for tag ${tag} have been written to release-body.md`);
-    } catch (error) {
-        console.error('Error writing release notes:', error.message);
+async function createReleaseNotesFile(tagMessage: string, tag: string): Promise<void> {
+    await writeFile(body, tagMessage);
+    console.log(`Release notes for tag ${tag} have been written to release-body.md`);
+}
+
+async function handleExistingTag(tag: string): Promise<boolean> {
+    const answer = await askQuestion(`Tag ${tag} already exists. Do you want to replace it? (Yes/No): `, rl);
+    if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'y') {
+        console.log(`Operation aborted`);
+        return false;
     }
+    execSync(`git tag -d ${tag}`);
+    execSync(`git push origin :refs/tags/${tag}`);
+    console.log(`Deleted existing tag ${tag} locally and remotely.`);
+    return true;
 }
 
 async function createTag() {
     const currentVersion = process.env.npm_package_version;
-    tag = `${currentVersion}`;
+    const tag = `${currentVersion}`;
 
-    // Check or create body.md before asking for the commit message
     await checkOrCreateFile(body);
-    exists = execSync(`git ls-remote --tags origin`).toString().includes(`refs/tags/${tag}`);
-    if (exists) {
-        rl.question(`Tag ${tag} already exists. Do you want to replace it? (Yes/No): `, async (answer) => {
-            if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'y') {
-                console.log(`operation aborted`);
-                process.exit();
-            } else {
-                execSync(`git tag -d ${tag}`);
-                execSync(`git push origin :refs/tags/${tag}`); // Push the delete to remote repository
-                console.log(`Deleted existing tag ${tag} locally and remotely.`);
-                doCommit(currentVersion)
-            }
-        });
-    } else {
-        doCommit(currentVersion)
+    const exists = execSync(`git ls-remote --tags origin`).toString().includes(`refs/tags/${tag}`);
+
+    if (exists && !(await handleExistingTag(tag))) {
+        rl.close();
+        return;
     }
+    await doCommit(currentVersion, tag)
 }
 
-createTag();
 
-async function doCommit(currentVersion: string | undefined) {
+
+async function doCommit(currentVersion: string | undefined, tag: string) {
     rl.question(`Enter the commit message for version ${currentVersion}: `, async (message) => {
-        doNextSteps(message);
+        doNextSteps(message, tag);
         rl.close();
     });
 }
 
-async function doNextSteps(message: unknown) {
-    let tagMessage = `${message}`;
-    const messages = tagMessage.split('\\n');
-    const toShow = tagMessage.replace(/\\n/g, '\n');
-    await createReleaseNotesFile(toShow);
-    tagMessage = messages.map(message => `-m "${message}"`).join(' ');
+async function doNextSteps(message: string, tag: string) {
+    const messages = message.split('\\n');
+    const toShow = message.replace(/\\n/g, '\n');
+    await createReleaseNotesFile(toShow, tag);
+    const tagMessage = messages.map(m => `-m "${m}"`).join(' ');
+
     try {
         execSync(`git add ${body}`);
         execSync('git commit -m "update tag description"');
@@ -90,7 +80,9 @@ async function doNextSteps(message: unknown) {
     execSync(`git push origin ${tag}`);
     console.log(`Release ${tag} pushed to repo.`);
     console.log(dedent`
-            with message: 
+        with message: 
             ${toShow}
-            `);
+    `);
 }
+
+createTag().catch(console.error);

@@ -1,80 +1,97 @@
-import * as readline from 'readline';
-import { execSync } from 'child_process';
 import { readFile, writeFile } from "fs/promises";
 import dedent from 'dedent';
 import * as semver from 'semver';
+import { askQuestion, createReadlineInterface, gitExec } from './utils.mts';
 
-function updateVersion() {
-    const rl = readline.createInterface({
-        input: process.stdin as NodeJS.ReadableStream,
-        output: process.stdout  as NodeJS.WritableStream
-    });
+const rl = createReadlineInterface();
 
-    rl.question(dedent`
-    kind of update:
-        patch(1.0.1) -> type 1 or p
-        minor(1.1.0) -> type 2 or min
-        major(2.0.0) -> type 3 or maj
-        or version number (e.g. 2.0.0)
-    \n`, async (updateType) => {
-        rl.close();
+async function getTargetVersion(currentVersion: string): Promise<string> {
+    const updateType = await askQuestion(dedent`
+        Current version: ${currentVersion}
+        Kind of update:
+            patch(1.0.1) -> type 1 or p
+            minor(1.1.0) -> type 2 or min
+            major(2.0.0) -> type 3 or maj
+            or version number (e.g. 2.0.0)
+        Enter choice: `, rl);
+        
+    switch (updateType.trim()) {
+        case 'p':
+        case '1':
+            return semver.inc(currentVersion, 'patch') || '';
+        case 'min':
+        case '2':
+            return semver.inc(currentVersion, 'minor') || '';
+        case 'maj':
+        case '3':
+            return semver.inc(currentVersion, 'major') || '';
+        default:
+            return semver.valid(updateType.trim()) || '';
+    }
+}
 
-        // Increment version for chosen type
+async function updateJsonFile(filename: string, updateFn: (json: any) => void): Promise<void> {
+    try {
+        const content = JSON.parse(await readFile(filename, "utf8"));
+        updateFn(content);
+        await writeFile(filename, JSON.stringify(content, null, "\t"));
+    } catch (error) {
+        console.error(`Error updating ${filename}:`, error instanceof Error ? error.message : String(error));
+        throw error;
+    }
+}
+
+async function updateManifestVersions(targetVersion: string): Promise<void> {
+    try {
+        const manifest = JSON.parse(await readFile("manifest.json", "utf8"));
+        const { minAppVersion } = manifest;
+
+        await Promise.all([
+            updateJsonFile("manifest.json", json => json.version = targetVersion),
+            updateJsonFile("versions.json", json => json[targetVersion] = minAppVersion),
+            updateJsonFile("package.json", json => json.version = targetVersion),
+            updateJsonFile("package-lock.json", json => json.version = targetVersion)
+        ]);
+    } catch (error) {
+        console.error('Error updating manifest versions:', error instanceof Error ? error.message : String(error));
+        throw error;
+    }
+}
+
+async function updateVersion(): Promise<void> {
+    try {
         const currentVersion = process.env.npm_package_version || '1.0.0';
-        let targetVersion;
+        const targetVersion = await getTargetVersion(currentVersion);
 
-        switch (updateType.trim()) {
-            case 'p':
-            case '1':
-                targetVersion = semver.inc(currentVersion, 'patch');
-                break;
-            case 'min':
-            case '2':
-                targetVersion = semver.inc(currentVersion, 'minor');
-                break;
-            case 'maj':
-            case '3':
-                targetVersion = semver.inc(currentVersion, 'major');
-                break;
-            default:
-                if (semver.valid(updateType.trim())) {
-                    targetVersion = updateType.trim();
-                } else {
-                    console.log("Invalid version");
-                    process.exit(1);
-                }
+        if (!targetVersion) {
+            console.log("Invalid version");
+            return;
         }
 
-        await updateManifestVersions(targetVersion as string);
+        await updateManifestVersions(targetVersion);
 
-        // Git add, commit et push
-        execSync(`git add -A && git commit -m "Updated to version ${targetVersion}" && git push`);
-        console.log(`version updated to ${targetVersion}`);
-        process.exit();
-    });
+        try {
+            gitExec('git add .');
+            gitExec(`git commit -m "Updated to version ${targetVersion}"`);
+        } catch (commitError) {
+            console.log('Commit already exists or failed.');
+            return;
+        }
+
+        try {
+            gitExec('git push');
+            console.log(`Version successfully updated to ${targetVersion} and pushed.`);
+        } catch (pushError) {
+            console.error('Failed to push version update:', pushError instanceof Error ? pushError.message : String(pushError));
+        }
+    } catch (error) {
+        console.error('Error:', error instanceof Error ? error.message : String(error));
+    } finally {
+        rl.close();
+    }
 }
 
-async function updateManifestVersions(targetVersion: string) {
-    // Read minAppVersion from manifest.json and bump version to target version
-    const manifest = JSON.parse(await readFile("manifest.json", "utf8"));
-    const { minAppVersion } = manifest;
-    manifest.version = targetVersion;
-    await writeFile("manifest.json", JSON.stringify(manifest, null, "\t"));
-
-    // Update versions.json with target version and minAppVersion from manifest.json
-    const versions = JSON.parse(await readFile("versions.json", "utf8"));
-    versions[targetVersion] = minAppVersion;
-    await writeFile("versions.json", JSON.stringify(versions, null, "\t"));
-
-    // Update package.json
-    const packageJsn = JSON.parse(await readFile("package.json", "utf8"));
-    packageJsn.version = targetVersion;
-    await writeFile("package.json", JSON.stringify(packageJsn, null, "\t"));
-
-    // Update package-lock.json
-    const packageLockJsn = JSON.parse(await readFile("package-lock.json", "utf8"));
-    packageLockJsn.version = targetVersion;
-    await writeFile("package-lock.json", JSON.stringify(packageLockJsn, null, "\t"));
-}
-
-updateVersion();
+updateVersion().catch(console.error).finally(() => {
+    console.log('Exiting...');
+    process.exit();
+});
