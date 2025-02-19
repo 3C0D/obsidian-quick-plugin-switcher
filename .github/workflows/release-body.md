@@ -1,1 +1,1 @@
-fix on release missing files
+handle uninstall errors
