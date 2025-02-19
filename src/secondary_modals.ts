@@ -49,7 +49,7 @@ export class DescriptionModal extends Modal {
 				href: pluginItem.authorUrl,
 			});
 
-		let desc;	
+		let desc;
 		Object.values(this.plugin.settings.commPlugins).forEach((item: PluginCommInfo) => {
 			if (item.id === pluginItem.id) {
 				desc = item.description;
@@ -253,12 +253,16 @@ export class ReadMeModal extends Modal {
 				new ButtonComponent(divButtons)
 					.setButtonText("Uninstall")
 					.onClick(async () => {
-						await (this.modal.app as any).plugins.uninstallPlugin(
-							pluginItem.id
-						);
-						await this.onOpen();
-						new Notice(`${pluginItem.name} uninstalled`, 2500);
-						await reOpenModal(this.modal);
+						try {
+							await (this.modal.app as any).plugins.uninstallPlugin(
+								pluginItem.id
+							);
+							await this.onOpen();
+							new Notice(`${pluginItem.name} uninstalled`, 2500);
+							await reOpenModal(this.modal);
+						} catch (error: any) {
+							new Notice(`Failed to uninstall ${pluginItem.name}: ${error.message}`, 5000);
+						}
 					});
 		}
 
@@ -315,11 +319,11 @@ export class ReadMeModal extends Modal {
 
 		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem)),
 
-		this.scope.register([], "g", async (e) => await openGitHubRepo(e, this.modal, pluginItem)),
+			this.scope.register([], "g", async (e) => await openGitHubRepo(e, this.modal, pluginItem)),
 
-		this.scope.register([], "escape", async (event) => {
-			this.close();
-		});
+			this.scope.register([], "escape", async (event) => {
+				this.close();
+			});
 
 		this.modalEl.addEventListener("contextmenu", (event) => {
 			event.preventDefault();

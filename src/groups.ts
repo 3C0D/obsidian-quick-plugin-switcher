@@ -249,8 +249,12 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
     const { commPlugins } = settings
     for (const id of inGroup) {
         if (!isInstalled(id)) continue;
-        await this.app.plugins.uninstallPlugin(id);
-        new Notice(`${commPlugins[id].name} uninstalled`, 5000);
+        try {
+            await this.app.plugins.uninstallPlugin(id);
+            new Notice(`${commPlugins[id].name} uninstalled`, 5000);
+        } catch (error: any) {
+            new Notice(`Failed to uninstall ${commPlugins[id].name}: ${error.message}`, 5000);
+        }
     }
     await reOpenModal(modal);
 }
@@ -385,14 +389,14 @@ const getGroupIndexLength = (modal: QPSModal | CPModal, groupKey: string) => {
     const { settings } = modal.plugin;
     const { installed, commPlugins } = settings
     const { lengthGroup, groupValue } = modal instanceof QPSModal
-    ? {
-        lengthGroup: Object.keys(installed).filter(id => installed[id].groupInfo.groupIndices.indexOf(groupIndex) !== -1).length,
-        groupValue: Groups[groupKey as keyof typeof Groups]
-    }
-    : {
-        lengthGroup: Object.keys(commPlugins).filter(id => commPlugins[id].groupCommInfo.groupIndices.indexOf(groupIndex) !== -1).length,
-        groupValue: GroupsComm[groupKey as keyof typeof GroupsComm]
-    };
+        ? {
+            lengthGroup: Object.keys(installed).filter(id => installed[id].groupInfo.groupIndices.indexOf(groupIndex) !== -1).length,
+            groupValue: Groups[groupKey as keyof typeof Groups]
+        }
+        : {
+            lengthGroup: Object.keys(commPlugins).filter(id => commPlugins[id].groupCommInfo.groupIndices.indexOf(groupIndex) !== -1).length,
+            groupValue: GroupsComm[groupKey as keyof typeof GroupsComm]
+        };
 
     return { groupIndex, lengthGroup, groupValue };
 };
@@ -619,5 +623,5 @@ export function groupNbFromEmoticon(el: HTMLElement) {
 }
 
 export function groupNbFromGrpName(groupName: string | undefined) {
-    return parseInt(groupName?.slice(0,1) ?? "0");
+    return parseInt(groupName?.slice(0, 1) ?? "0");
 }

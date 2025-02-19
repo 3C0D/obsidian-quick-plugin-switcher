@@ -1040,9 +1040,13 @@ export function contextMenuCPM(
 			.setDisabled(!isInstalled(id) || id === "quick-plugin-switcher")
 			.setIcon("log-out")
 			.onClick(async () => {
-				await this.app.plugins.uninstallPlugin(id);
-				new Notice(`${matchingItem.name} uninstalled`, 2500);
-				await reOpenModal(modal);
+				try {
+					await this.app.plugins.uninstallPlugin(id);
+					new Notice(`${matchingItem.name} uninstalled`, 2500);
+					await reOpenModal(modal);
+				} catch (error: any) {
+					new Notice(`Failed to uninstall ${matchingItem.name}: ${error.message}`, 3500);
+				}				
 			});
 	});
 	if (this.app.isMobile) {
