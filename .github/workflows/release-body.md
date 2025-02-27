@@ -1,1 +1,1 @@
-handle uninstall errors
+fix: uninstall 
