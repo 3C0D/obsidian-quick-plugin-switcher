@@ -54,6 +54,7 @@ import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 import QuickPluginSwitcher from './main.ts';
 import slug from 'slug';
 import { translation } from './translate.ts';
+import { normalize } from 'path';
 
 /** Shows the reset button only when mostSwitched filter is active and some plugins have been switched. */
 export const mostSwitchedResetButton = (
@@ -270,13 +271,9 @@ async function searchUpdates(modal: QPSModal): Promise<void> {
 		if (!filePath) continue;
 
 		if (Platform.isDesktop) {
-			const isDevPath = filePath + '/package.json';
-			try {
-				await modal.app.vault.adapter.stat(isDevPath);
-				continue; // file exists, skip
-			} catch {
-				// file doesn't exist, continue processing
-			}
+			const devPath = normalize(filePath + '/package.json');
+			const isDevPath = await modal.app.vault.adapter.stat(devPath);
+			if (isDevPath) continue; // it's a dev plugin
 		}
 
 		const manifest = await getManifest(modal, item.id);
@@ -1324,17 +1321,14 @@ export async function updatePlugin(
 	if (!filePath) return;
 
 	if (Platform.isDesktop) {
-		const isDevPath = filePath + '/package.json';
-		try {
-			await modal.app.vault.adapter.stat(isDevPath);
-			return; // file exists, return early
-		} catch {
-			// file doesn't exist, continue processing
-		}
+		const devPath = normalize(filePath + '/package.json');
+		const isDevPath = await modal.app.vault.adapter.stat(devPath);
+		if (isDevPath) return; // file exists, return early
 	}
 
 	const manifest = await getManifest(modal, id);
 	if (!manifest) return;
+	console.log('manifest', manifest);
 	const hasRelease = await getReleaseVersion(modal, id, manifest);
 	const lastVersion = manifest.version;
 
