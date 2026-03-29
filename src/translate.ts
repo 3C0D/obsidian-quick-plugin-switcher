@@ -33,7 +33,7 @@ async function translate(text: string, from: string) {
 export async function translation(selectedContent: string) {
     if(!selectedContent){
         new Notice("no content selected", 2000);
-        return
+        return;
     }
     const translated = await translate(selectedContent, "en");
     if (!translated) return;

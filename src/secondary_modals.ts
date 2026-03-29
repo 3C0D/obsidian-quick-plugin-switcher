@@ -8,15 +8,26 @@ import {
 	Notice,
 	Platform,
 	Scope,
-	Setting,
-} from "obsidian";
-import QuickPluginSwitcher from "./main";
-import { CPModal, getManifest, getReadMe, handleNote } from "./community-plugins_modal";
-import { isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
-import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
-import { openGitHubRepo, getHkeyCondition } from "./modal_components";
-import { translation } from "./translate";
-import { PluginCommInfo, PluginInstalled } from "./types/global";
+	Setting
+} from 'obsidian';
+import QuickPluginSwitcher from './main.ts';
+import {
+	CPModal,
+	getManifest,
+	getReadMe,
+	handleNote
+} from './community-plugins_modal.ts';
+import {
+	isInstalled,
+	modifyGitHubLinks,
+	openPluginSettings,
+	reOpenModal,
+	showHotkeysFor
+} from './modal_utils.ts';
+import { base64ToUint8Array, getSelectedContent, isEnabled } from './utils.ts';
+import { openGitHubRepo, getHkeyCondition } from './modal_components.ts';
+import { translation } from './translate.ts';
+import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 
 // for plugin description
 export class DescriptionModal extends Modal {
@@ -34,29 +45,31 @@ export class DescriptionModal extends Modal {
 		const { contentEl, pluginItem } = this;
 		contentEl.empty();
 		contentEl
-			.createEl("p", {
-				text: pluginItem.name + " - v" + pluginItem.version,
+			.createEl('p', {
+				text: pluginItem.name + ' - v' + pluginItem.version
 			})
-			.createEl("p", {
+			.createEl('p', {
 				text:
-					"author: " +
+					'author: ' +
 					pluginItem.author +
-					", url: " +
-					(pluginItem.authorUrl ? "" : "null"),
+					', url: ' +
+					(pluginItem.authorUrl ? '' : 'null')
 			})
-			.createEl("a", {
+			.createEl('a', {
 				text: pluginItem.authorUrl,
-				href: pluginItem.authorUrl,
+				href: pluginItem.authorUrl
 			});
 
 		let desc;
-		Object.values(this.plugin.settings.commPlugins).forEach((item: PluginCommInfo) => {
-			if (item.id === pluginItem.id) {
-				desc = item.description;
+		Object.values(this.plugin.settings.commPlugins).forEach(
+			(item: PluginCommInfo) => {
+				if (item.id === pluginItem.id) {
+					desc = item.description;
+				}
 			}
-		});
+		);
 		desc = desc ? desc : pluginItem.description;
-		contentEl.createEl("p", { text: desc });
+		contentEl.createEl('p', { text: desc });
 	}
 
 	onClose() {
@@ -89,11 +102,11 @@ class ConfirmModal extends Modal {
 			this.modalEl.style.height = `${this.height}px`;
 		}
 
-		contentEl.createEl("p").setText(this.message);
+		contentEl.createEl('p').setText(this.message);
 
 		new Setting(this.contentEl)
 			.addButton((b) => {
-				b.setIcon("checkmark")
+				b.setIcon('checkmark')
 					.setCta()
 					.onClick(() => {
 						this.callback(true);
@@ -101,7 +114,7 @@ class ConfirmModal extends Modal {
 					});
 			})
 			.addExtraButton((b) =>
-				b.setIcon("cross").onClick(() => {
+				b.setIcon('cross').onClick(() => {
 					this.callback(false);
 					this.close();
 				})
@@ -158,7 +171,7 @@ export class ReadMeModal extends Modal {
 		super(app);
 		this.modal = modal;
 		this.pluginItem = pluginItem;
-		this.modalEl.addClass("read-me-modal");
+		this.modalEl.addClass('read-me-modal');
 		this.comp = new Component();
 		this.comp.load();
 	}
@@ -169,34 +182,36 @@ export class ReadMeModal extends Modal {
 		const id = pluginItem.id;
 
 		contentEl
-			.createEl("p", {
+			.createEl('p', {
 				text: pluginItem.name,
-				cls: "readme-title",
+				cls: 'readme-title'
 			})
-			.createEl("p", {
-				text: "By: " + pluginItem.author,
+			.createEl('p', {
+				text: 'By: ' + pluginItem.author
 			});
 
 		const openRepo = contentEl.createDiv();
-		new ButtonComponent(openRepo)
-			.setButtonText("GitHub Repo")
-			.onClick(async (e) => {
-				await openGitHubRepo(e, this.modal, pluginItem);
-			});
+		new ButtonComponent(openRepo).setButtonText('GitHub Repo').onClick(async (e) => {
+			await openGitHubRepo(e, this.modal, pluginItem);
+		});
 
-		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
+		const divButtons = contentEl.createDiv({ cls: 'read-me-buttons' });
 		if (!isInstalled(id)) {
 			new ButtonComponent(divButtons)
-				.setButtonText("Install")
+				.setButtonText('Install')
 				.setCta()
 				.onClick(async () => {
 					const manifest = await getManifest(this.modal, id);
 					if (!manifest) {
 						new Notice(`Manifest ${id} not found`, 2500);
-						return
+						return;
 					}
-					const lastVersion = manifest.version
-					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion ?? "", manifest);
+					const lastVersion = manifest.version;
+					await this.app.plugins.installPlugin(
+						pluginItem.repo,
+						lastVersion ?? '',
+						manifest
+					);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();
 					await reOpenModal(this.modal);
@@ -206,13 +221,13 @@ export class ReadMeModal extends Modal {
 			let condition: boolean;
 			if (!isEnabled(this.modal, manifests[pluginItem.id].id)) {
 				new ButtonComponent(divButtons)
-					.setButtonText("Enable")
+					.setButtonText('Enable')
 					.onClick(async () => {
-						await (
-							this.modal.app as any
-						).plugins.enablePluginAndSave(pluginItem.id);
+						await (this.modal.app as any).plugins.enablePluginAndSave(
+							pluginItem.id
+						);
 						await this.onOpen();
-						this.modal.plugin.installedUpdate()
+						this.modal.plugin.installedUpdate();
 						new Notice(`${pluginItem.name} enabled`, 2500);
 						await reOpenModal(this.modal);
 					});
@@ -220,38 +235,35 @@ export class ReadMeModal extends Modal {
 				const pluginSettings = this.modal.app.setting.openTabById(pluginItem.id);
 				if (pluginSettings) {
 					new ButtonComponent(divButtons)
-						.setButtonText("Options")
+						.setButtonText('Options')
 						.onClick(async (e) => {
-							await openPluginSettings(e,
-								this.modal,
-								pluginItem
-							);
+							await openPluginSettings(e, this.modal, pluginItem);
 						});
 				}
 
 				condition = await getHkeyCondition(this.modal, pluginItem);
 				if (condition) {
 					new ButtonComponent(divButtons)
-						.setButtonText("Hotkeys")
+						.setButtonText('Hotkeys')
 						.onClick(async (e) => {
 							await showHotkeysFor(e, this.modal, pluginItem);
 						});
 				}
-				if (id !== "quick-plugin-switcher")
+				if (id !== 'quick-plugin-switcher')
 					new ButtonComponent(divButtons)
-						.setButtonText("Disable")
+						.setButtonText('Disable')
 						.onClick(async () => {
-							await (
-								this.modal.app as any
-							).plugins.disablePluginAndSave(pluginItem.id);
+							await (this.modal.app as any).plugins.disablePluginAndSave(
+								pluginItem.id
+							);
 							await this.onOpen();
 							new Notice(`${pluginItem.name} disabled`, 2500);
 							await reOpenModal(this.modal);
 						});
 			}
-			if (id !== "quick-plugin-switcher")
+			if (id !== 'quick-plugin-switcher')
 				new ButtonComponent(divButtons)
-					.setButtonText("Uninstall")
+					.setButtonText('Uninstall')
 					.onClick(async () => {
 						try {
 							await (this.modal.app as any).plugins.uninstallPlugin(
@@ -261,82 +273,92 @@ export class ReadMeModal extends Modal {
 							new Notice(`${pluginItem.name} uninstalled`, 2500);
 							await reOpenModal(this.modal);
 						} catch (error: any) {
-							new Notice(`Failed to uninstall ${pluginItem.name}: ${error.message}`, 5000);
+							new Notice(
+								`Failed to uninstall ${pluginItem.name}: ${error.message}`,
+								5000
+							);
 						}
 					});
 		}
 
-		const shortcuts = contentEl.createDiv(
-			{
-				cls: "read-me-shortcuts",
-			})
+		const shortcuts = contentEl.createDiv({
+			cls: 'read-me-shortcuts'
+		});
 
-		const notesButtonContainer = shortcuts.createDiv({ cls: "notes-button-container" });
+		const notesButtonContainer = shortcuts.createDiv({
+			cls: 'notes-button-container'
+		});
 
 		new ButtonComponent(notesButtonContainer)
-			.setButtonText("📝")
+			.setButtonText('📝')
 			.onClick(async (e) => {
-				await handleNote(e, this.modal, pluginItem, this)
-			})
+				await handleNote(e, this.modal, pluginItem, this);
+			});
 
 		// color background
 		if (pluginItem.hasNote) {
-			notesButtonContainer.addClass("notes-button-background");
+			notesButtonContainer.addClass('notes-button-background');
 		}
 
 		if (Platform.isDesktop) {
 			shortcuts.createSpan({
-				text: " (t) translate  (n) add note  (g) gitHub repo",
-			})
+				text: ' (t) translate  (n) add note  (g) gitHub repo'
+			});
 		}
 
-		const div = contentEl.createDiv({ cls: "qps-read-me" });
+		const div = contentEl.createDiv({ cls: 'qps-read-me' });
 
 		const data = await getReadMe(pluginItem);
 
 		if (!data) {
-			return
+			return;
 		}
-		const decoder = new TextDecoder("utf-8");
+		const decoder = new TextDecoder('utf-8');
 		const content = decoder.decode(base64ToUint8Array(data.content));
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
-		await MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
+		await MarkdownRenderer.render(this.app, updatedContent, div, '/', this.comp);
 
 		// || add a menu with translate
-		this.modalEl.addEventListener("mousemove", (event) => {
+		this.modalEl.addEventListener('mousemove', (event) => {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
 
-		this.scope.register([], "t", async () => {
+		this.scope.register([], 't', async () => {
 			const selectedContent = getSelectedContent();
 			if (!selectedContent) {
-				new Notice("no selection", 4000);
+				new Notice('no selection', 4000);
 				return;
 			}
 			await translation(selectedContent);
 		});
 
-		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem)),
-
-			this.scope.register([], "g", async (e) => await openGitHubRepo(e, this.modal, pluginItem)),
-
-			this.scope.register([], "escape", async (event) => {
+		(this.scope.register(
+			[],
+			'n',
+			async (e) => await handleNote(e, this.modal, pluginItem)
+		),
+			this.scope.register(
+				[],
+				'g',
+				async (e) => await openGitHubRepo(e, this.modal, pluginItem)
+			),
+			this.scope.register([], 'escape', async (event) => {
 				this.close();
-			});
+			}));
 
-		this.modalEl.addEventListener("contextmenu", (event) => {
+		this.modalEl.addEventListener('contextmenu', (event) => {
 			event.preventDefault();
 			const selectedContent = getSelectedContent();
 			if (selectedContent) {
 				const menu = new Menu();
 				menu.addItem((item) =>
-					item.setTitle("Copy (Ctrl+C)").onClick(async () => {
+					item.setTitle('Copy (Ctrl+C)').onClick(async () => {
 						await navigator.clipboard.writeText(selectedContent);
 					})
 				);
 				menu.addItem((item) =>
-					item.setTitle("translate (t)").onClick(async () => {
+					item.setTitle('translate (t)').onClick(async () => {
 						await translation(selectedContent);
 					})
 				);
@@ -354,40 +376,54 @@ export class ReadMeModal extends Modal {
 }
 
 export class SeeNoteModal extends Modal {
-	constructor(app: App, public modal: CPModal, public pluginItem: PluginCommInfo, public sectionContent: string | null, public cb: (result: string | null) => Promise<void>, public _this?: ReadMeModal) {
+	constructor(
+		app: App,
+		public modal: CPModal,
+		public pluginItem: PluginCommInfo,
+		public sectionContent: string | null,
+		public cb: (result: string | null) => Promise<void>,
+		public _this?: ReadMeModal
+	) {
 		super(app);
 	}
 
 	onOpen() {
 		const { contentEl: El } = this;
-		El.createEl('h6', { text: "Don't include H1 titles. To delete a note delete all content. Saved on close.", cls: "read-me-shortcuts " })
-		El.createEl('h3', { text: this.pluginItem.name + " by " + this.pluginItem.author })
-		new Setting(El)
-			.addTextArea((text) => {
-				text.setValue(this.sectionContent ?? "")
-				text.inputEl.rows = 40
-				text.inputEl.cols = 82
-				text.inputEl.onblur = async () => {
-					this.sectionContent = text.getValue();
-					const lines = this.sectionContent.split("\n");
-					let stop = false
-					for (const line of lines) {
-						if (line.startsWith("# ")) {
-							new Notice("H1 are not allowed, content was paste in clipboard", 4000);
-							navigator.clipboard.writeText(this.sectionContent)
-							await this.cb(null)
-							stop = true
-							break
-						}
+		El.createEl('h6', {
+			text: "Don't include H1 titles. To delete a note delete all content. Saved on close.",
+			cls: 'read-me-shortcuts '
+		});
+		El.createEl('h3', {
+			text: this.pluginItem.name + ' by ' + this.pluginItem.author
+		});
+		new Setting(El).addTextArea((text) => {
+			text.setValue(this.sectionContent ?? '');
+			text.inputEl.rows = 40;
+			text.inputEl.cols = 82;
+			text.inputEl.onblur = async () => {
+				this.sectionContent = text.getValue();
+				const lines = this.sectionContent.split('\n');
+				let stop = false;
+				for (const line of lines) {
+					if (line.startsWith('# ')) {
+						new Notice(
+							'H1 are not allowed, content was paste in clipboard',
+							4000
+						);
+						navigator.clipboard.writeText(this.sectionContent);
+						await this.cb(null);
+						stop = true;
+						break;
 					}
-					this.onClose()
-					if (stop) return
-					if (this.sectionContent && !this.sectionContent.endsWith("\n")) {
-						this.sectionContent = this.sectionContent + "\n"
-					}
-					this.sectionContent
-					await this.cb(this.sectionContent)
 				}
-			})
+				this.onClose();
+				if (stop) return;
+				if (this.sectionContent && !this.sectionContent.endsWith('\n')) {
+					this.sectionContent = this.sectionContent + '\n';
+				}
+				this.sectionContent;
+				await this.cb(this.sectionContent);
+			};
+		});
 	}
 }
