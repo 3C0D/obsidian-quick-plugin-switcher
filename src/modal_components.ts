@@ -55,7 +55,10 @@ import QuickPluginSwitcher from './main.ts';
 import slug from 'slug';
 import { translation } from './translate.ts';
 
-export const mostSwitchedResetButton = (modal: QPSModal, contentEl: HTMLElement) => {
+export const mostSwitchedResetButton = (
+	modal: QPSModal,
+	contentEl: HTMLElement
+): void => {
 	const { settings } = modal.plugin;
 	const { filters, installed } = settings;
 	if (
@@ -76,7 +79,7 @@ export async function addSearch(
 	modal: CPModal | QPSModal,
 	contentEl: HTMLElement,
 	placeholder: string
-) {
+): Promise<void> {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -120,7 +123,10 @@ export function doSearchQPS(
 	});
 }
 
-export function doSearchCPM(value: string, commPlugins: Record<string, PluginCommInfo>) {
+export function doSearchCPM(
+	value: string,
+	commPlugins: Record<string, PluginCommInfo>
+): string[] {
 	const search = prepareSimpleSearch(value);
 	return Object.keys(commPlugins).filter((id) => {
 		if (value.trim() === '') return true;
@@ -136,7 +142,7 @@ export function doSearchCPM(value: string, commPlugins: Record<string, PluginCom
 	});
 }
 
-export const getFilters = (modal: CPModal, contentEl: HTMLElement) => {
+export const getFilters = (modal: CPModal, contentEl: HTMLElement): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -161,7 +167,7 @@ export const getFilters = (modal: CPModal, contentEl: HTMLElement) => {
 		});
 };
 
-export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
+export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 	const { plugin } = modal;
 	const button = new ButtonComponent(el).setIcon('rocket').setCta();
 
@@ -212,7 +218,7 @@ export const checkbox = (
 	modal: QPSModal | CPModal,
 	contentEl: HTMLElement,
 	text: string
-) => {
+): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -244,7 +250,7 @@ export const checkbox = (
 	});
 };
 
-async function searchUpdates(modal: QPSModal) {
+async function searchUpdates(modal: QPSModal): Promise<void> {
 	const { installed } = modal.plugin.settings;
 	let open = false;
 	let count = 0;
@@ -286,7 +292,7 @@ async function searchUpdates(modal: QPSModal) {
 	}
 }
 
-export const vertDotsButton = (el: HTMLElement) => {
+export const vertDotsButton = (el: HTMLElement): void => {
 	new ButtonComponent(el).setButtonText('\u2807').setTooltip('open context-menu');
 };
 
@@ -294,11 +300,11 @@ export const notesButton = (
 	el: HTMLElement,
 	modal: CPModal,
 	pluginItem: PluginCommInfo
-) => {
+): void => {
 	new ButtonComponent(el).setTooltip('open plugin notes').setButtonText('📝');
 };
 
-export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
+export const commButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 	const { plugin } = modal;
 	new ButtonComponent(el)
 		.setIcon('download-cloud')
@@ -315,7 +321,7 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 		});
 };
 
-export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
+export const commOptionButton = (modal: CPModal, el: HTMLSpanElement): void => {
 	new ButtonComponent(el)
 		.setIcon('list-end')
 		.setCta()
@@ -371,7 +377,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 		});
 };
 
-export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
+export const powerButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed } = settings;
@@ -551,7 +557,7 @@ export const itemToggleClass = (
 	modal: QPSModal,
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
-) => {
+): void => {
 	if (pluginItem.target === 0) {
 		itemContainer.toggleClass('qps-is-desktop', true);
 	}
@@ -580,7 +586,7 @@ export const itemToggleClass = (
 export const itemTextComponent = (
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
-) => {
+): HTMLInputElement => {
 	let customValue = pluginItem.name;
 	if (pluginItem.isDesktopOnly) {
 		customValue = '\u1D30' + customValue;
@@ -597,7 +603,7 @@ const pluginFeatureSubmenu = async (
 	submenu: Menu,
 	pluginItem: PluginInstalled,
 	modal: QPSModal
-) => {
+): Promise<void> => {
 	const { settings } = modal.plugin;
 	const { installed } = settings;
 	const id = pluginItem.id;
@@ -650,7 +656,7 @@ const pluginFeatureSubmenu = async (
 export const getHkeyCondition = async function (
 	modal: QPSModal | CPModal,
 	item: PluginInstalled | PluginCommInfo
-) {
+): Promise<boolean> {
 	const pluginCommands =
 		await modal.app.setting.openTabById('command-palette')?.app?.commands.commands;
 	return hasKeyStartingWith(pluginCommands, item.id);
@@ -660,7 +666,7 @@ export const openGitHubRepo = async (
 	e: MouseEvent | KeyboardEvent | TouchEvent,
 	modal: QPSModal | CPModal,
 	plugin: PluginInstalled | PluginCommInfo
-) => {
+): Promise<void> => {
 	let repo: string;
 	if ('repo' in plugin) {
 		repo = plugin.repo;
@@ -691,7 +697,7 @@ export const searchDivButtons = (modal: QPSModal, contentEl: HTMLElement): void 
 	);
 };
 
-export function showStats(pluginItem: PluginCommInfo) {
+export function showStats(pluginItem: PluginCommInfo): void {
 	const idSlug = slug(pluginItem.id);
 	const URL = `https://www.moritzjung.dev/obsidian-stats/plugins/${idSlug}#plugin-download-chart`;
 	window.open(URL, '_blank');
@@ -714,7 +720,7 @@ export async function hideOnCLick(
 	modal: QPSModal | CPModal,
 	groupNumber: number,
 	inGroup: string[]
-) {
+): Promise<void> {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { groups, groupsComm, installed, commPlugins } = settings;
@@ -765,7 +771,7 @@ export async function hideOnCLick(
 export async function handleClick(
 	evt: MouseEvent | TouchEvent,
 	modal: QPSModal | CPModal
-) {
+): Promise<void> {
 	const elementFromPoint = getElementFromMousePosition(modal)?.parentElement;
 	if (elementFromPoint?.classList.contains('button-container')) {
 		const matchingItem = findMatchingItem(
@@ -794,7 +800,7 @@ let touchCount = 0;
 const touchDelay = 300;
 let clickTimeout: NodeJS.Timeout;
 let element: HTMLElement;
-export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal) {
+export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal): void {
 	touchCount++;
 	if (touchCount === 1) {
 		element = evt.target as HTMLElement;
@@ -815,7 +821,7 @@ export function handleDblClick(
 	evt: MouseEvent | TouchEvent,
 	modal: QPSModal | CPModal,
 	element?: HTMLElement
-) {
+): void {
 	const elementFromPoint = element ? element : getElementFromMousePosition(modal);
 
 	const targetBlock = elementFromPoint?.closest('.qps-comm-block') as HTMLElement;
@@ -881,7 +887,7 @@ const handleInputDblClick = async (
 	modal: QPSModal,
 	itemContainer: HTMLDivElement,
 	pluginItem: PluginInstalled
-) => {
+): Promise<void> => {
 	if (pluginItem.id === 'quick-plugin-switcher') return;
 	const currentValue = pluginItem.time.toString();
 	modal.isDblClick = true;
@@ -892,7 +898,7 @@ const handleInputDblClick = async (
 
 	if (!pluginItem.delayed) {
 		if (!input) return;
-		const setDelay = () => {
+		const setDelay = (): void => {
 			setTimeout(async () => {
 				await modal.addDelay(pluginItem.id, input);
 				modal.isDblClick = false;
@@ -915,7 +921,10 @@ const handleInputDblClick = async (
 	}
 };
 
-export async function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
+export async function handleContextMenu(
+	evt: MouseEvent,
+	modal: QPSModal | CPModal
+): Promise<void> {
 	const elementFromPoint = getElementFromMousePosition(modal);
 	let targetBlock;
 
@@ -953,7 +962,7 @@ export function contextMenuCPM(
 	evt: MouseEvent | TouchEvent,
 	modal: CPModal,
 	matchingItem: PluginCommInfo
-) {
+): void {
 	evt.preventDefault();
 	const menu = new Menu();
 	const id = matchingItem.id;
@@ -1075,7 +1084,7 @@ async function contextMenuQPS(
 	evt: MouseEvent | TouchEvent,
 	modal: QPSModal,
 	matchingItem: PluginInstalled
-) {
+): Promise<void> {
 	const { plugin } = modal;
 	const menu = new Menu();
 
@@ -1289,7 +1298,7 @@ export async function updatePlugin(
 	modal: QPSModal,
 	matchingItem: PluginInstalled,
 	commPlugins: Record<string, PluginCommInfo>
-) {
+): Promise<void> {
 	const { id, version } = matchingItem;
 	if (!matchingItem.dir) {
 		new Notice(`Not a published plugin`, 2500);
@@ -1341,7 +1350,10 @@ export async function updatePlugin(
 	await reOpenModal(modal);
 }
 
-export const findMatchingItem = (modal: CPModal | QPSModal, targetBlock: HTMLElement) => {
+export const findMatchingItem = (
+	modal: CPModal | QPSModal,
+	targetBlock: HTMLElement
+): PluginInstalled | PluginCommInfo | undefined => {
 	const { installed, commPlugins } = modal.plugin.settings;
 	const pluginId = targetBlock.getAttribute('data-plugin-id');
 	if (modal instanceof QPSModal) {
@@ -1362,7 +1374,7 @@ export const createClearGroupsMenuItem = (
 	modal: QPSModal | CPModal,
 	menu: Menu,
 	groupNumber: number
-) => {
+): void => {
 	if (!modal.app.isMobile) {
 		menu.addItem((item) => {
 			item.setTitle('Clear group(s)').setIcon('user-minus');
@@ -1381,7 +1393,7 @@ export const createClearGroupsMenuItem = (
 	}
 };
 
-export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
+export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal): void {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed, commPlugins, groups, groupsComm } = settings;
@@ -1419,7 +1431,7 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
 export async function addCommandToPlugin(
 	modal: QPSModal | QuickPluginSwitcher,
 	pluginItem: PluginInstalled
-) {
+): Promise<void> {
 	const plugin = modal instanceof QPSModal ? modal.plugin : modal;
 	if (!pluginItem.commandified) return;
 	const disabled =
@@ -1449,7 +1461,7 @@ export async function addCommandToPlugin(
 export async function removeCommandFromPlugin(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
-) {
+): Promise<void> {
 	const QPSname = modal.plugin.manifest.id + ':';
 	const pluginId = pluginItem.id + '-switcher';
 	modal.app.commands.removeCommand(QPSname + pluginId);

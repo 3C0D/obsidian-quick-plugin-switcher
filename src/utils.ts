@@ -17,7 +17,7 @@ export function removeItem<T>(arr: Array<T>, value: T): Array<T> {
 	return arr;
 }
 
-export function formatNumber(num: number, precision = 3) {
+export function formatNumber(num: number, precision = 3): string {
 	const map = [
 		{ suffix: 'T', threshold: 1e12 },
 		{ suffix: 'B', threshold: 1e9 },
@@ -90,12 +90,12 @@ export function hasKeyStartingWith(obj: Record<string, string>, prefix: string):
 	return false;
 }
 
-export function getSelectedContent() {
+export function getSelectedContent(): string | undefined {
 	const selection = window.getSelection();
 	return selection?.toString();
 }
 
-export function base64ToUint8Array(base64: string) {
+export function base64ToUint8Array(base64: string): Uint8Array {
 	const binaryString = atob(base64);
 	const length = binaryString.length;
 	const bytes = new Uint8Array(length);

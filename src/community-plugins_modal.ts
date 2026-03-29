@@ -90,30 +90,30 @@ export class CPModal extends Modal {
 		this.plugin = plugin;
 	}
 
-	getMousePosition = (event: MouseEvent) => {
+	getMousePosition = (event: MouseEvent): void => {
 		this.mousePosition = { x: event.clientX, y: event.clientY };
 	};
-	getHandleKeyDown = async (event: KeyboardEvent) => {
+	getHandleKeyDown = async (event: KeyboardEvent): Promise<void> => {
 		await handleKeyDown(event, this);
 	};
-	getHandleContextMenu = async (evt: MouseEvent) => {
+	getHandleContextMenu = async (evt: MouseEvent): Promise<void> => {
 		if (this.isDblClick) return;
 		await handleContextMenu(evt, this);
 	};
-	getHandleDblClick = (evt: MouseEvent) => {
+	getHandleDblClick = (evt: MouseEvent): void => {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	};
-	getHandleClick = (evt: MouseEvent) => {
+	getHandleClick = (evt: MouseEvent): void => {
 		if (this.isDblClick) return;
 		handleClick(evt, this);
 	};
-	getHandleTouch = (evt: TouchEvent) => {
+	getHandleTouch = (evt: TouchEvent): void => {
 		if (this.isDblClick) return;
 		handleTouchStart(evt, this);
 	};
 
-	removeListeners() {
+	removeListeners(): void {
 		this.modalEl.removeEventListener('mousemove', this.getMousePosition);
 		document.removeEventListener('keydown', this.getHandleKeyDown);
 		this.modalEl.removeEventListener('contextmenu', this.getHandleContextMenu);
@@ -126,7 +126,7 @@ export class CPModal extends Modal {
 		}
 	}
 
-	container() {
+	container(): void {
 		const { contentEl } = this;
 		this.modalEl.addClass('community-plugins-modal');
 		this.header = contentEl.createEl('div', {
@@ -153,7 +153,7 @@ export class CPModal extends Modal {
 		}
 	}
 
-	async onOpen() {
+	async onOpen(): Promise<void> {
 		this.removeListeners();
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
@@ -281,7 +281,7 @@ export class CPModal extends Modal {
 		);
 	}
 
-	async addItems(value: string) {
+	async addItems(value: string): Promise<void> {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { commPlugins, pluginStats } = settings;
@@ -291,7 +291,7 @@ export class CPModal extends Modal {
 		await this.drawItemsAsync.bind(this)(listItems, pluginStats, value);
 	}
 
-	hightLightSpan(value: string, text: string) {
+	hightLightSpan(value: string, text: string): string {
 		if (value.trim() === '') {
 			return text;
 		} else {
@@ -312,7 +312,7 @@ export class CPModal extends Modal {
 		listItems: string[],
 		pluginStats: PackageInfoData,
 		value: string
-	) {
+	): Promise<void> {
 		const batchSize = 50;
 		let index = 0;
 
@@ -447,7 +447,7 @@ export class CPModal extends Modal {
 		}
 	}
 
-	async onClose() {
+	async onClose(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.removeListeners();
@@ -457,24 +457,24 @@ export class CPModal extends Modal {
 	}
 }
 
-export async function fetchData(url: string, message?: string) {
+export async function fetchData(url: string, message?: string): Promise<any> {
 	try {
 		const response = await requestUrl(url);
 		if (response.status !== 200) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 		return response.json;
-	} catch (error) {
+	} catch (e) {
 		if (message) {
-			console.warn(message, error);
+			console.warn(message, e);
 		} else {
-			console.warn(`Error fetching data from ${url}:`, error);
+			console.warn(`Error fetching data from ${url}:`, e);
 		}
 		return null;
 	}
 }
 
-export async function getReadMe(item: PluginCommInfo) {
+export async function getReadMe(item: PluginCommInfo): Promise<any> {
 	const repo = item.repo;
 	const readmeFormats = ['README.md', 'README.org'];
 
@@ -485,8 +485,7 @@ export async function getReadMe(item: PluginCommInfo) {
 			if (response.status === 200) {
 				return response.json;
 			}
-		} catch (error) {
-			null;
+		} catch {
 			// console.warn(`Error fetching ${format} for ${repo}:`, error);
 		}
 	}
@@ -527,7 +526,7 @@ export async function getReleaseVersion(
 	}
 }
 
-function sortItemsBy(modal: CPModal, listItems: string[]) {
+function sortItemsBy(modal: CPModal, listItems: string[]): string[] {
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
 	const { sortBy } = settings;
@@ -566,7 +565,7 @@ function sortItemsBy(modal: CPModal, listItems: string[]) {
 	return (sortFunctions[sortBy] || sortFunctions['Downloads'])();
 }
 
-function cpmModeSort(modal: CPModal, listItems: string[]) {
+function cpmModeSort(modal: CPModal, listItems: string[]): string[] {
 	const { settings } = modal.plugin;
 	const { filtersComm, commPlugins } = settings;
 
@@ -600,7 +599,7 @@ function cpmModeSort(modal: CPModal, listItems: string[]) {
 	return (sortFunctions[filtersComm] || sortFunctions[CommFilters.all])();
 }
 
-const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
+const handleKeyDown = async (event: KeyboardEvent, modal: CPModal): Promise<void> => {
 	const elementFromPoint = getElementFromMousePosition(modal);
 	const targetBlock = elementFromPoint?.closest('.qps-comm-block') as HTMLElement;
 
@@ -631,7 +630,7 @@ const handleHotkeysCPM = async (
 	modal: CPModal,
 	evt: KeyboardEvent,
 	pluginItem: PluginCommInfo
-) => {
+): Promise<void> => {
 	if (modal.pressed) {
 		// with press delay...
 		return;
@@ -703,7 +702,7 @@ const handleHotkeysCPM = async (
 	}
 };
 
-const addGroupCircles = (modal: CPModal, el: HTMLElement, item: string) => {
+const addGroupCircles = (modal: CPModal, el: HTMLElement, item: string): void => {
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
 	const indices = commPlugins[item].groupCommInfo.groupIndices;
@@ -741,7 +740,7 @@ const addGroupCircles = (modal: CPModal, el: HTMLElement, item: string) => {
 	}
 };
 
-export async function installFromList(modal: CPModal, enable = false) {
+export async function installFromList(modal: CPModal, enable = false): Promise<void> {
 	const pluginList = await getPluginListFromFile();
 
 	if (pluginList) {
@@ -785,7 +784,7 @@ async function getPluginListFromFile(): Promise<string[] | null> {
 	return null;
 }
 
-export async function getPluginsList(modal: CPModal, enable = false) {
+export async function getPluginsList(modal: CPModal, enable = false): Promise<void> {
 	const installed = getInstalled();
 
 	if (Platform.isDesktop) {
@@ -818,7 +817,10 @@ export async function getPluginsList(modal: CPModal, enable = false) {
 	}
 }
 
-export async function installPluginFromOtherVault(modal: CPModal, enable = false) {
+export async function installPluginFromOtherVault(
+	modal: CPModal,
+	enable = false
+): Promise<void> {
 	if (!Platform.isDesktop) {
 		new Notice('Import from other vault only available in desktop version', 3000);
 		return;
@@ -895,7 +897,7 @@ export async function installPluginFromOtherVault(modal: CPModal, enable = false
 	}
 }
 
-export async function updateNotes(plugin: QuickPluginSwitcher) {
+export async function updateNotes(plugin: QuickPluginSwitcher): Promise<void> {
 	const name = 'Community plugins notes';
 	const dir = plugin.settings.commPluginsNotesFolder;
 	const path = dir ? dir + '/' + name + '.md' : name + '.md';
@@ -927,7 +929,7 @@ export async function handleNote(
 	modal: CPModal,
 	pluginItem: PluginCommInfo,
 	_this?: ReadMeModal
-) {
+): Promise<void> {
 	const name = 'Community plugins notes';
 	const dir = modal.plugin.settings.commPluginsNotesFolder;
 	let note: TFile | null;
@@ -997,7 +999,7 @@ async function cb(
 	note: TFile,
 	content: string,
 	_this?: ReadMeModal
-) {
+): Promise<void> {
 	// Case 1: Result is null - Removes the section
 	if (result === null) {
 		const updatedContent = content.replace(sectionContent, '');
@@ -1039,12 +1041,12 @@ async function updatePluginSettings(
 	modal: CPModal,
 	pluginItem: PluginCommInfo,
 	hasNote: boolean
-) {
+): Promise<void> {
 	pluginItem.hasNote = hasNote;
 	await modal.plugin.saveSettings();
 }
 
-function reopenModals(modal: CPModal, _this?: ReadMeModal) {
+function reopenModals(modal: CPModal, _this?: ReadMeModal): void {
 	if (_this) {
 		_this.onOpen();
 	}
@@ -1052,6 +1054,6 @@ function reopenModals(modal: CPModal, _this?: ReadMeModal) {
 	modal.onOpen();
 }
 
-function escapeRegExp(string: string) {
+function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

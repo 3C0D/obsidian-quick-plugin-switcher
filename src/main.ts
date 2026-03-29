@@ -25,14 +25,14 @@ export default class QuickPluginSwitcher extends Plugin {
 	lengthEnabled = 0;
 	reset = false;
 
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 		this.app.workspace.onLayoutReady(this.initializePlugin.bind(this));
 		this.addSettingTab(new QPSSettingTab(this.app, this));
 		this.addCommands();
 	}
 
-	private async initializePlugin() {
+	private async initializePlugin(): Promise<void> {
 		this.settings.savedVersion = this.manifest.version;
 		await this.updateInstalledPlugins();
 		await this.setupPluginWrappers();
@@ -40,7 +40,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.handleDelayedPlugins();
 	}
 
-	async updateInstalledPlugins() {
+	async updateInstalledPlugins(): Promise<void> {
 		const installed = this.settings.installed || {};
 		const manifests = this.app.plugins.manifests || {};
 
@@ -51,7 +51,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	}
 
-	async setupPluginWrappers() {
+	async setupPluginWrappers(): Promise<void> {
 		const { wrapper1, wrapper2 } = this.wrapDisableEnablePluginAndSave(
 			Object.keys(this.settings.installed),
 			async () => await this.saveSettings()
@@ -61,7 +61,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.register(wrapper2);
 	}
 
-	async syncEnabled() {
+	async syncEnabled(): Promise<void> {
 		const installed = this.settings.installed;
 		// plugin has been toggled from obsidian UI ? or if is delayed unabled
 		for (const id in installed) {
@@ -79,21 +79,21 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.saveSettings();
 	}
 
-	isPlatformMismatch(pluginItem: PluginInstalled) {
+	isPlatformMismatch(pluginItem: PluginInstalled): boolean {
 		return (
 			(pluginItem.target === TargetPlatform.Mobile && Platform.isDesktop) ||
 			(pluginItem.target === TargetPlatform.Desktop && Platform.isMobile)
 		);
 	}
 
-	isPlatformDependent(pluginItem: PluginInstalled) {
+	isPlatformDependent(pluginItem: PluginInstalled): boolean {
 		return (
 			pluginItem.target === TargetPlatform.Mobile ||
 			pluginItem.target === TargetPlatform.Desktop
 		);
 	}
 
-	async handleDelayedPlugins() {
+	async handleDelayedPlugins(): Promise<void> {
 		const installed = this.settings.installed;
 
 		for (const id in installed) {
@@ -128,19 +128,23 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	}
 
-	addCommands() {
+	addCommands(): void {
 		this.addCommand({
 			id: 'quick-plugin-switcher-modal',
 			name: 'Open modal',
 			callback: () => this.openQuickPluginSwitcherModal()
 		});
 
-		this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) =>
-			this.openQuickPluginSwitcherModal()
+		this.addRibbonIcon(
+			'toggle-right',
+			'Quick Plugin Switcher',
+			(_evt: MouseEvent): void => {
+				this.openQuickPluginSwitcherModal();
+			}
 		);
 	}
 
-	async openQuickPluginSwitcherModal() {
+	async openQuickPluginSwitcherModal(): Promise<void> {
 		if (!this.settings.keepDropDownValues) {
 			this.settings.filters = Filters.all;
 			this.settings.filtersComm = CommFilters.all;
@@ -154,7 +158,10 @@ export default class QuickPluginSwitcher extends Plugin {
 		}, 700);
 	}
 
-	wrapDisableEnablePluginAndSave(stillInstalled: string[], cb: () => Promise<void>) {
+	wrapDisableEnablePluginAndSave(
+		stillInstalled: string[],
+		cb: () => Promise<void>
+	): { wrapper1: () => void; wrapper2: () => void } {
 		const installed = this.settings.installed || {};
 		const wrapper1 = around(this.app.plugins, {
 			disablePluginAndSave(oldMethod) {
@@ -202,7 +209,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		return { wrapper1, wrapper2 };
 	}
 
-	async installedUpdate() {
+	async installedUpdate(): Promise<void> {
 		const installed = this.settings.installed || {};
 		const manifests = this.app.plugins.manifests || {};
 
@@ -268,7 +275,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.saveSettings();
 	}
 
-	getLength() {
+	getLength(): void {
 		const installed = this.settings.installed;
 		this.lengthAll = Object.keys(installed).length;
 		this.lengthEnabled = 0;
@@ -283,7 +290,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	}
 
-	async pluginsCommInfo() {
+	async pluginsCommInfo(): Promise<boolean> {
 		console.warn('Fetching community plugins info...');
 		try {
 			const [plugins, stats] = await Promise.all([
@@ -323,7 +330,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	}
 
-	exeAfterDelay = async (func: () => Promise<boolean>) => {
+	exeAfterDelay = async (func: () => Promise<boolean>): Promise<void> => {
 		const currentTime: number = Date.now();
 		const timeSinceLastFetch = currentTime - this.settings.lastFetchExe;
 
@@ -341,7 +348,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	};
 
-	async loadSettings() {
+	async loadSettings(): Promise<void> {
 		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
 	}
 
@@ -349,7 +356,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.loadSettings();
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 }

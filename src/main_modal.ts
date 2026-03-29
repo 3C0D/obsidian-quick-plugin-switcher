@@ -74,30 +74,30 @@ export class QPSModal extends Modal {
 		this.plugin = plugin;
 	}
 
-	getMousePosition = (event: MouseEvent) => {
+	getMousePosition = (event: MouseEvent): void => {
 		this.mousePosition = { x: event.clientX, y: event.clientY };
 	};
-	getHandleKeyDown = async (event: KeyboardEvent) => {
+	getHandleKeyDown = async (event: KeyboardEvent): Promise<void> => {
 		await handleKeyDown(event, this);
 	};
-	getHandleContextMenu = async (evt: MouseEvent) => {
+	getHandleContextMenu = async (evt: MouseEvent): Promise<void> => {
 		if (this.isDblClick) return;
 		await handleContextMenu(evt, this);
 	};
-	getHandleDblClick = (evt: MouseEvent) => {
+	getHandleDblClick = (evt: MouseEvent): void => {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	};
-	getHandleClick = (evt: MouseEvent) => {
+	getHandleClick = (evt: MouseEvent): void => {
 		if (this.isDblClick) return;
 		handleClick(evt, this);
 	};
-	getHandleTouch = (evt: TouchEvent) => {
+	getHandleTouch = (evt: TouchEvent): void => {
 		if (this.isDblClick) return;
 		handleTouchStart(evt, this);
 	};
 
-	removeListeners() {
+	removeListeners(): void {
 		this.modalEl.removeEventListener('mousemove', this.getMousePosition);
 		document.removeEventListener('keydown', this.getHandleKeyDown);
 		this.modalEl.removeEventListener('contextmenu', this.getHandleContextMenu);
@@ -110,7 +110,7 @@ export class QPSModal extends Modal {
 		}
 	}
 
-	container() {
+	container(): void {
 		const { contentEl } = this;
 		this.modalEl.addClass('qps-modal');
 		this.header = contentEl.createEl('div', {
@@ -133,7 +133,7 @@ export class QPSModal extends Modal {
 		}
 	}
 
-	async onOpen() {
+	async onOpen(): Promise<void> {
 		this.removeListeners();
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
@@ -256,7 +256,7 @@ export class QPSModal extends Modal {
 		);
 	}
 
-	async addItems(value: string) {
+	async addItems(value: string): Promise<void> {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { installed, filters } = settings;
@@ -297,7 +297,7 @@ export class QPSModal extends Modal {
 		});
 	}
 
-	addDelay = async (id: string, input: HTMLInputElement) => {
+	addDelay = async (id: string, input: HTMLInputElement): Promise<void> => {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { installed } = settings;
@@ -313,7 +313,7 @@ export class QPSModal extends Modal {
 		await reOpenModal(this);
 	};
 
-	onClose() {
+	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.removeListeners();
@@ -324,7 +324,7 @@ export function circleCSSModif(
 	modal: QPSModal | CPModal,
 	el: HTMLSpanElement,
 	groupIndex: number
-) {
+): void {
 	const { color } = getEmojiForGroup(groupIndex);
 	el.style.backgroundColor = color;
 	if (modal instanceof QPSModal) {
@@ -339,7 +339,7 @@ const itemTogglePluginButton = (
 	modal: QPSModal,
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
-) => {
+): void => {
 	const platformOff =
 		(pluginItem.target === TargetPlatform.Mobile && Platform.isDesktop) ||
 		(pluginItem.target === TargetPlatform.Desktop && Platform.isMobile);
@@ -356,7 +356,7 @@ const itemTogglePluginButton = (
 		});
 };
 
-const addGroupCircles = (input: HTMLElement, item: PluginInstalled) => {
+const addGroupCircles = (input: HTMLElement, item: PluginInstalled): void => {
 	const indices = item.groupInfo.groupIndices;
 	if (!indices.length) return;
 	if (indices.length < 3) {
@@ -391,7 +391,7 @@ const addGroupCircles = (input: HTMLElement, item: PluginInstalled) => {
 	}
 };
 
-async function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
+async function handleKeyDown(event: KeyboardEvent, modal: QPSModal): Promise<void> {
 	const elementFromPoint = getElementFromMousePosition(modal);
 	const pluginItemBlock = elementFromPoint?.closest('.qps-item-line') as HTMLDivElement;
 
@@ -424,7 +424,7 @@ export const toggleVisibility = async (
 	modal: QPSModal | CPModal,
 	targetGroupIcon: HTMLElement,
 	targetGroup: HTMLElement
-) => {
+): Promise<void> => {
 	let groupNumber: number;
 	if (targetGroupIcon) {
 		groupNumber = groupNbFromEmoticon(targetGroupIcon);
@@ -440,7 +440,7 @@ const handleHotkeysQPS = async (
 	modal: QPSModal,
 	evt: KeyboardEvent,
 	pluginItem: PluginInstalled
-) => {
+): Promise<void> => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { groups, installed } = settings;

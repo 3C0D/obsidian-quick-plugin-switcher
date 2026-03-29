@@ -41,7 +41,7 @@ export class DescriptionModal extends Modal {
 		this.pluginItem = pluginItem;
 	}
 
-	onOpen() {
+	onOpen(): void {
 		const { contentEl, pluginItem } = this;
 		contentEl.empty();
 		contentEl
@@ -72,7 +72,7 @@ export class DescriptionModal extends Modal {
 		contentEl.createEl('p', { text: desc });
 	}
 
-	onClose() {
+	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 	}
@@ -91,7 +91,7 @@ class ConfirmModal extends Modal {
 		super(app);
 	}
 
-	onOpen() {
+	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		if (this.width) {
@@ -121,7 +121,7 @@ class ConfirmModal extends Modal {
 			);
 	}
 
-	onClose() {
+	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 	}
@@ -176,7 +176,7 @@ export class ReadMeModal extends Modal {
 		this.comp.load();
 	}
 
-	async onOpen() {
+	async onOpen(): Promise<void> {
 		const { contentEl, pluginItem } = this;
 		contentEl.empty();
 		const id = pluginItem.id;
@@ -368,7 +368,7 @@ export class ReadMeModal extends Modal {
 		});
 	}
 
-	onClose() {
+	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.comp.unload();
@@ -387,7 +387,7 @@ export class SeeNoteModal extends Modal {
 		super(app);
 	}
 
-	onOpen() {
+	onOpen(): void {
 		const { contentEl: El } = this;
 		El.createEl('h6', {
 			text: "Don't include H1 titles. To delete a note delete all content. Saved on close.",

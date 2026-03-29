@@ -12,7 +12,10 @@ import { removeItem } from './utils.ts';
 import { createClearGroupsMenuItem, hideOnCLick } from './modal_components.ts';
 import type { PluginCommInfo, PluginInstalled, StringString } from './types/global.ts';
 
-export const byGroupDropdowns = (modal: QPSModal | CPModal, contentEl: HTMLElement) => {
+export const byGroupDropdowns = (
+	modal: QPSModal | CPModal,
+	contentEl: HTMLElement
+): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -22,7 +25,7 @@ export const byGroupDropdowns = (modal: QPSModal | CPModal, contentEl: HTMLEleme
 		getDropdownOptions(GroupsComm, Object.keys(settings.commPlugins).length);
 	}
 
-	function getDropdownOptions(groups: StringString, length: number) {
+	function getDropdownOptions(groups: StringString, length: number): void {
 		const dropdownOptions: StringString = {};
 		for (const groupKey in groups) {
 			const groupIndex = getIndexFromSelectedGroup(groupKey);
@@ -48,18 +51,18 @@ export const addDelayToGroup = (
 	groupNumber: number,
 	span: HTMLElement,
 	inGroup: string[]
-) => {
+): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const currentValue = (settings.groups[groupNumber]?.time || 0).toString();
 	const input = createInput(span, currentValue);
 	if (!input) return;
 
-	input.onblur = async () => {
+	input.onblur = async (): Promise<void> => {
 		await setDelay(input, settings, groupNumber, span, modal);
 	};
 
-	input.onkeydown = async (event) => {
+	input.onkeydown = async (event): Promise<void> => {
 		if (event.key === 'Enter') {
 			await setDelay(input, settings, groupNumber, span, modal);
 		}
@@ -71,7 +74,7 @@ export const addDelayToGroup = (
 		groupNumber: number,
 		span: HTMLElement,
 		modal: CPModal | QPSModal
-	) => {
+	): Promise<void> => {
 		// setTimeout to avoid input from being cleared before the input is set
 		const value = parseInt(input.value) || 0;
 		settings.groups[groupNumber].time = value;
@@ -87,7 +90,7 @@ const applyGroupDelay = async (
 	inGroup: string[],
 	groupNumber: number,
 	modal: CPModal | QPSModal
-) => {
+): Promise<void> => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed } = settings;
@@ -111,7 +114,7 @@ const groupMenuQPS = (
 	modal: QPSModal,
 	groupNumber: number,
 	span: HTMLSpanElement
-) => {
+): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed } = settings;
@@ -178,7 +181,11 @@ const groupMenuQPS = (
 	menu.showAtMouseEvent(evt);
 };
 
-const groupMenuCPM = async (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
+const groupMenuCPM = async (
+	evt: MouseEvent,
+	modal: CPModal,
+	groupNumber: number
+): Promise<void> => {
 	const menu = new Menu();
 	menu.addItem((item) => {
 		item.setTitle('Install & enable in group');
@@ -225,7 +232,7 @@ export const groupMenu = async (
 	modal: QPSModal | CPModal,
 	groupNumber: number,
 	span?: HTMLSpanElement
-) => {
+): Promise<void> => {
 	if (modal instanceof QPSModal && span) {
 		groupMenuQPS(evt, modal, groupNumber, span);
 	} else {
@@ -233,7 +240,10 @@ export const groupMenu = async (
 	}
 };
 
-async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
+async function uninstallAllPluginsInGroup(
+	modal: CPModal,
+	groupNumber: number
+): Promise<void> {
 	const inGroup = getPluginsInGroup(modal, groupNumber);
 
 	if (!inGroup.length) return;
@@ -259,7 +269,7 @@ export async function installAllPluginsInGroup(
 	modal: CPModal,
 	inGroup: string[],
 	enable = false
-) {
+): Promise<void> {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { commPlugins } = settings;
@@ -302,7 +312,7 @@ export const setGroupTitle = (
 	modal: QPSModal | CPModal,
 	Groups: StringString,
 	numberOfGroups: number
-) => {
+): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const currentGroupKeys = Object.keys(Groups);
@@ -348,7 +358,7 @@ export function addRemoveItemGroupMenuItems(
 	submenu: Menu,
 	pluginItem: PluginInstalled | PluginCommInfo,
 	alt?: boolean
-) {
+): void {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	Object.keys(Groups).forEach((groupKey) => {
@@ -382,7 +392,10 @@ export function addRemoveItemGroupMenuItems(
 	});
 }
 
-const getGroupIndexLength = (modal: QPSModal | CPModal, groupKey: string) => {
+const getGroupIndexLength = (
+	modal: QPSModal | CPModal,
+	groupKey: string
+): { groupIndex: number; lengthGroup: number; groupValue: string } => {
 	const groupIndex = getIndexFromSelectedGroup(groupKey);
 	const { settings } = modal.plugin;
 	const { installed, commPlugins } = settings;
@@ -413,7 +426,7 @@ export function addRemoveGroupMenuItems(
 	modal: QPSModal | CPModal,
 	submenu: Menu,
 	groupNumber: number
-) {
+): void {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed, commPlugins, groups, groupsComm } = settings;
@@ -475,7 +488,7 @@ export const addToGroupSubMenu = (
 	pluginItem: PluginInstalled | PluginCommInfo,
 	modal: QPSModal | CPModal,
 	alt?: boolean
-) => {
+): void => {
 	Object.entries(Groups).forEach(([key, value]) => {
 		const groupIndices =
 			modal instanceof QPSModal
@@ -512,7 +525,7 @@ export const editGroupName = (
 	modal: CPModal | QPSModal,
 	span: HTMLSpanElement,
 	groupNumber: number
-) => {
+): void => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const currentValue =
@@ -520,7 +533,7 @@ export const editGroupName = (
 			? settings.groupsComm[groupNumber]?.name || ''
 			: settings.groups[groupNumber]?.name) || '';
 
-	const updateGroupName = (value: string) => {
+	const updateGroupName = (value: string): void => {
 		if (modal instanceof CPModal) {
 			settings.groupsComm[groupNumber].name = value || GroupsComm[groupNumber];
 			span.textContent = settings.groupsComm[groupNumber].name;
@@ -530,7 +543,7 @@ export const editGroupName = (
 		}
 	};
 
-	const handleBlurOrEnter = () => {
+	const handleBlurOrEnter = (): void => {
 		setTimeout(async () => {
 			if (!modal.isDblClick && input) {
 				updateGroupName(input.value);
@@ -542,20 +555,22 @@ export const editGroupName = (
 	const input = createInput(span, currentValue);
 	if (!input) return;
 	input.onblur = handleBlurOrEnter;
-	input.onkeydown = (event) => {
+	input.onkeydown = (event): void => {
 		if (event.key === 'Enter') {
 			handleBlurOrEnter();
 		}
 	};
 };
 
-export const getEmojiForGroup = (groupNumber: number) => {
+export const getEmojiForGroup = (
+	groupNumber: number
+): { emoji: string; color: string } => {
 	const emojis = ['🟡', '🔵', '🔴', '⚪️', '🟣', '🟢'];
 	const colors = ['#FFD700', '#0000FF', '#FF0000', '#FFFFFF', '#800080', '#00FF00'];
 	return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1] };
 };
 
-export const getCirclesItem = (indices: number[]) => {
+export const getCirclesItem = (indices: number[]): string => {
 	//move this to modal utilities
 	const len = indices.length;
 	let background = '';
@@ -578,7 +593,7 @@ export const getCirclesItem = (indices: number[]) => {
 	return content;
 };
 
-export function groupIsEmpty(groupIndex: number, modal: QPSModal | CPModal) {
+export function groupIsEmpty(groupIndex: number, modal: QPSModal | CPModal): boolean {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed, commPlugins } = settings;
@@ -593,7 +608,7 @@ export function groupIsEmpty(groupIndex: number, modal: QPSModal | CPModal) {
 	}
 }
 
-export function groupNameFromIndex(groups: StringString, index: number) {
+export function groupNameFromIndex(groups: StringString, index: number): string | null {
 	for (const key in groups) {
 		if (key.endsWith(index.toString())) {
 			return key;
@@ -602,7 +617,7 @@ export function groupNameFromIndex(groups: StringString, index: number) {
 	return null;
 }
 
-export function getIndexFromSelectedGroup(str: string) {
+export function getIndexFromSelectedGroup(str: string): number {
 	if (str === 'SelectGroup') return 0;
 	else return parseInt(str.slice(-1));
 }
@@ -611,7 +626,7 @@ export function getIndexFromSelectedGroup(str: string) {
 export async function rmvAllGroupsFromPlugin(
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
-) {
+): Promise<void> {
 	const { plugin } = modal;
 	if ('repo' in pluginItem) {
 		pluginItem.groupCommInfo.groupIndices = [];
@@ -623,11 +638,11 @@ export async function rmvAllGroupsFromPlugin(
 	await reOpenModal(modal);
 }
 
-export function groupNbFromEmoticon(el: HTMLElement) {
+export function groupNbFromEmoticon(el: HTMLElement): number {
 	const groupNameEl = el.nextElementSibling;
 	return parseInt(groupNameEl?.querySelector('span')?.textContent ?? '');
 }
 
-export function groupNbFromGrpName(groupName: string | undefined) {
+export function groupNbFromGrpName(groupName: string | undefined): number {
 	return parseInt(groupName?.slice(0, 1) ?? '0');
 }

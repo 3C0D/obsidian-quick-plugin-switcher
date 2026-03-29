@@ -11,7 +11,7 @@ import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 /**
  * Reset most switched values.
  */
-export const reset = async (modal: QPSModal) => {
+export const reset = async (modal: QPSModal): Promise<void> => {
 	const { plugin } = modal;
 	const confirmed = await confirm('Reset most switched values?', 250);
 	if (confirmed) {
@@ -24,13 +24,13 @@ export const reset = async (modal: QPSModal) => {
 	}
 };
 
-export const sortByName = (plugin: Plugin, listItems: string[]) => {
+export const sortByName = (plugin: Plugin, listItems: string[]): void => {
 	const { settings } = plugin;
 	const { installed } = settings;
 	listItems.sort((a, b) => installed[a].name.localeCompare(installed[b].name));
 };
 
-export const sortSwitched = (plugin: Plugin, listItems: string[]) => {
+export const sortSwitched = (plugin: Plugin, listItems: string[]): void => {
 	const { settings } = plugin;
 	const { installed } = settings;
 	listItems.sort((a, b) => installed[b].switched - installed[a].switched);
@@ -44,7 +44,10 @@ export const sortSwitched = (plugin: Plugin, listItems: string[]) => {
 // 	return pluginCommands;
 // };
 
-export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInstalled) => {
+export const togglePlugin = async (
+	modal: QPSModal,
+	pluginItem: PluginInstalled
+): Promise<void> => {
 	const { plugin } = modal;
 	pluginItem.enabled = !pluginItem.enabled;
 	pluginItem.enabled
@@ -58,18 +61,18 @@ export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInstalled)
 export async function openDirectoryInFileManager(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
-) {
+): Promise<void> {
 	const shell = window.electron.remote.shell;
 	const filePath = modal.app.vault.adapter.getFullPath(pluginItem.dir as string);
 	try {
 		await shell.openPath(filePath);
-	} catch (err) {
+	} catch {
 		const plugins = modal.app.vault.adapter.getFullPath('.obsidian/plugins');
 		await shell.openPath(plugins);
 	}
 }
 
-export const delayedReEnable = async (modal: QPSModal, id: string) => {
+export const delayedReEnable = async (modal: QPSModal, id: string): Promise<void> => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const { installed } = settings;
@@ -78,7 +81,7 @@ export const delayedReEnable = async (modal: QPSModal, id: string) => {
 	installed[id].enabled = true;
 };
 
-export const conditionalEnable = async (modal: QPSModal, id: string) => {
+export const conditionalEnable = async (modal: QPSModal, id: string): Promise<void> => {
 	const { installed } = modal.plugin.settings;
 	if (installed[id].delayed && installed[id].time > 0) {
 		await modal.app.plugins.enablePlugin(id);
@@ -89,14 +92,18 @@ export const conditionalEnable = async (modal: QPSModal, id: string) => {
 	}
 };
 
-export const selectValue = (input: HTMLInputElement | null) => {
+export const selectValue = (input: HTMLInputElement | null): void => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) => {
+export const modeSort = (
+	modal: QPSModal,
+	plugin: Plugin,
+	listItems: string[]
+): string[] => {
 	const { settings } = plugin;
 	const { installed, filters } = settings;
-	const sortByName = (a: string, b: string) =>
+	const sortByName = (a: string, b: string): number =>
 		installed[a].name.localeCompare(installed[b].name);
 
 	if (plugin.reset) {
@@ -137,7 +144,10 @@ export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) =
 	return (sortFunctions[filters] || sortFunctions[Filters.all])();
 };
 
-export function createInput(el: HTMLElement | null, currentValue: string) {
+export function createInput(
+	el: HTMLElement | null,
+	currentValue: string
+): HTMLInputElement | undefined {
 	if (el) {
 		const input = document.createElement('input');
 		input.type = 'text';
@@ -151,18 +161,18 @@ export function createInput(el: HTMLElement | null, currentValue: string) {
 	}
 }
 
-export const pressDelay = (modal: CPModal | QPSModal) => {
+export const pressDelay = (modal: CPModal | QPSModal): void => {
 	modal.pressed = true;
 	setTimeout(() => {
 		modal.pressed = false;
 	}, 1);
 };
 
-export function getInstalled() {
+export function getInstalled(): string[] {
 	return Object.keys(this.app.plugins.manifests);
 }
 
-export function getHidden(modal: QPSModal | CPModal, listItems: string[]) {
+export function getHidden(modal: QPSModal | CPModal, listItems: string[]): string[] {
 	const { settings } = modal.plugin;
 	const { installed, commPlugins } = settings;
 	let hiddens: string[];
@@ -176,15 +186,18 @@ export function getHidden(modal: QPSModal | CPModal, listItems: string[]) {
 	return listItems.filter((item) => hiddens.includes(item));
 }
 
-export function getHasNote(modal: CPModal, listItems: string[]) {
+export function getHasNote(modal: CPModal, listItems: string[]): string[] {
 	return listItems.filter((item) => modal.plugin.settings.commPlugins[item].hasNote);
 }
 
-export function isInstalled(id: string) {
+export function isInstalled(id: string): boolean {
 	return getInstalled().includes(id);
 }
 
-export async function reOpenModal(modal: QPSModal | CPModal, searchInit = false) {
+export async function reOpenModal(
+	modal: QPSModal | CPModal,
+	searchInit = false
+): Promise<void> {
 	await modal.plugin.saveSettings();
 	modal.searchInit = searchInit;
 	await modal.onOpen();
@@ -194,7 +207,7 @@ export async function openPluginSettings(
 	evt: MouseEvent | TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
-) {
+): Promise<void> {
 	evt.preventDefault();
 	const enabled = modal.plugin.settings.installed[pluginItem.id]?.enabled;
 
@@ -216,7 +229,7 @@ export const showHotkeysFor = async function (
 	evt: MouseEvent | TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
-) {
+): Promise<void> {
 	evt.preventDefault();
 	const enabled =
 		modal instanceof CPModal
@@ -251,7 +264,7 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 	// add space before closing quote
 	content = content.replace(
 		/(?!href=\s*)(["'])(https?:\/\/[^"'\s]+)(["'])/g,
-		(_, openChar, url, closeChar) => {
+		(_, openChar, url, closeChar): string => {
 			return `${openChar}${url} ${closeChar}`;
 		}
 	);
@@ -263,7 +276,9 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 			: `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 	};
 
-	const extractDimensions = (match: string) => {
+	const extractDimensions = (
+		match: string
+	): { width: number | null; height: number | null } => {
 		const getDimension = (type: string): number | null => {
 			const patterns = [
 				// style="width: 100px" or style="width: 100"
@@ -326,7 +341,7 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 	return content;
 }
 
-export function getElementFromMousePosition(modal: QPSModal | CPModal) {
+export function getElementFromMousePosition(modal: QPSModal | CPModal): Element | null {
 	if (modal.mousePosition) {
 		const elementFromPoint = document.elementFromPoint(
 			modal.mousePosition.x,
@@ -337,7 +352,7 @@ export function getElementFromMousePosition(modal: QPSModal | CPModal) {
 	return null;
 }
 
-export function focusSearchInput(time: number) {
+export function focusSearchInput(time: number): void {
 	setTimeout(() => {
 		(
 			document.querySelector('.qps-search-component input') as HTMLInputElement
