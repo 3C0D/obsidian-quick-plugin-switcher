@@ -55,6 +55,7 @@ import QuickPluginSwitcher from './main.ts';
 import slug from 'slug';
 import { translation } from './translate.ts';
 
+/** Shows the reset button only when mostSwitched filter is active and some plugins have been switched. */
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
 	contentEl: HTMLElement
@@ -75,11 +76,11 @@ export const mostSwitchedResetButton = (
 	}
 };
 
-export async function addSearch(
+export const addSearch = async (
 	modal: CPModal | QPSModal,
 	contentEl: HTMLElement,
 	placeholder: string
-): Promise<void> {
+): Promise<void> => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -99,8 +100,9 @@ export async function addSearch(
 				);
 		})
 		.setClass('qps-search-component');
-}
+};
 
+/** Search for QPS — searches by name, optionally also by author. */
 export function doSearchQPS(
 	modal: QPSModal,
 	value: string,
@@ -123,6 +125,7 @@ export function doSearchQPS(
 	});
 }
 
+/** Search for CPM — searches by name, author and description. */
 export function doSearchCPM(
 	value: string,
 	commPlugins: Record<string, PluginCommInfo>
@@ -152,17 +155,18 @@ export const getFilters = (modal: CPModal, contentEl: HTMLElement): void => {
 		.setTooltip('change type of sorting')
 		.buttonEl.addEventListener('click', async (evt: MouseEvent) => {
 			const menu = new Menu();
-			for (const key in SortBy) {
+			// Use Object.keys() instead of for...in to avoid iterating over inherited prototype properties
+			Object.keys(SortBy).forEach((key) => {
 				menu.addItem((item) =>
 					item
-						.setTitle(SortBy[key])
+						.setTitle(SortBy[key as keyof typeof SortBy])
 						.onClick(async () => {
 							settings.sortBy = key;
 							await reOpenModal(modal);
 						})
 						.setChecked(key === settings.sortBy)
 				);
-			}
+			});
 			menu.showAtMouseEvent(evt);
 		});
 };
@@ -214,6 +218,7 @@ export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement): void 
 		});
 };
 
+/** In QPSModal: toggles byAuthor search. In CPModal: toggles invertFiltersComm. */
 export const checkbox = (
 	modal: QPSModal | CPModal,
 	contentEl: HTMLElement,
@@ -250,6 +255,10 @@ export const checkbox = (
 	});
 };
 
+/**
+ * Scans all installed plugins for available updates, skipping dev plugins (those with package.json).
+ * Sets toUpdate flag on plugins that have a newer version available.
+ */
 async function searchUpdates(modal: QPSModal): Promise<void> {
 	const { installed } = modal.plugin.settings;
 	let open = false;
@@ -296,11 +305,7 @@ export const vertDotsButton = (el: HTMLElement): void => {
 	new ButtonComponent(el).setButtonText('\u2807').setTooltip('open context-menu');
 };
 
-export const notesButton = (
-	el: HTMLElement,
-	modal: CPModal,
-	pluginItem: PluginCommInfo
-): void => {
+export const notesButton = (el: HTMLElement): void => {
 	new ButtonComponent(el).setTooltip('open plugin notes').setButtonText('📝');
 };
 
@@ -313,7 +318,7 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 		.setTooltip(
 			'community plugins: you can tag plugins with groups, install by group...'
 		)
-		.buttonEl.addEventListener('click', async (evt: MouseEvent) => {
+		.buttonEl.addEventListener('click', async (_evt: MouseEvent) => {
 			await plugin.exeAfterDelay(plugin.pluginsCommInfo.bind(plugin));
 			modal.close();
 			new CPModal(modal.app, plugin).open();
@@ -401,13 +406,12 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 						.onClick(async () => {
 							// disable all except this plugin
 							if (plugin.lengthEnabled > 1) {
-								for (const id in installed) {
+								// Use Object.keys() to safely iterate only over own properties
+								for (const id of Object.keys(installed)) {
 									if (id === 'quick-plugin-switcher') continue;
 									if (installed[id].enabled)
 										settings.wasEnabled.push(id);
-									await (modal.app as any).plugins.disablePluginAndSave(
-										id
-									);
+									await modal.app.plugins.disablePluginAndSave(id);
 									installed[id].enabled = false;
 								}
 								plugin.getLength();
@@ -496,13 +500,13 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 											.map(async (id) => {
 												installed[id].groupInfo.groupWasEnabled =
 													true;
-												await (
-													modal.app as any
-												).plugins.disablePluginAndSave(id);
+												await modal.app.plugins.disablePluginAndSave(
+													id
+												);
 												installed[id].enabled = false;
 											});
 										await Promise.all(toDisable);
-										if (toDisable) {
+										if (toDisable.length) {
 											plugin.getLength();
 											await reOpenModal(modal);
 											new Notice('All plugins disabled', 2500);
@@ -553,6 +557,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 		});
 };
 
+/** Applies CSS classes to the plugin item row based on its state (platform, delayed, update, group...). */
 export const itemToggleClass = (
 	modal: QPSModal,
 	pluginItem: PluginInstalled,
@@ -583,6 +588,7 @@ export const itemToggleClass = (
 	}
 };
 
+/** Renders the plugin name + version as a read-only text input, prefixed with ᴰ if desktop-only. */
 export const itemTextComponent = (
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
@@ -598,6 +604,7 @@ export const itemTextComponent = (
 	return input;
 };
 
+/** Submenu items for info, github, settings and hotkeys — shared between desktop context menu and mobile. */
 const pluginFeatureSubmenu = async (
 	evt: MouseEvent | TouchEvent,
 	submenu: Menu,
@@ -629,14 +636,14 @@ const pluginFeatureSubmenu = async (
 			})
 	);
 
-	const pluginSettings = modal.app.setting.openTabById(id);
+	const hasSettingsTab = modal.app.setting.openTabById(id);
 	submenu.addItem((item) =>
 		item
 			.setTitle('Plugin settings (s)')
 			.setIcon('settings')
-			.setDisabled(!pluginSettings)
+			.setDisabled(!hasSettingsTab)
 			.onClick(async () => {
-				await openPluginSettings(evt, modal, pluginItem);
+				await openPluginSettings(modal, pluginItem);
 			})
 	);
 
@@ -648,7 +655,7 @@ const pluginFeatureSubmenu = async (
 			.setIcon('plus-circle')
 			.setDisabled(!condition)
 			.onClick(async () => {
-				await showHotkeysFor(evt, modal, pluginItem);
+				await showHotkeysFor(modal, pluginItem);
 			})
 	);
 };
@@ -657,8 +664,8 @@ export const getHkeyCondition = async function (
 	modal: QPSModal | CPModal,
 	item: PluginInstalled | PluginCommInfo
 ): Promise<boolean> {
-	const pluginCommands =
-		await modal.app.setting.openTabById('command-palette')?.app?.commands.commands;
+	const pluginCommands = modal.app.commands.commands;
+	// command keys are "plugin-id:command-name", so we only need the plugin id as prefix
 	return hasKeyStartingWith(pluginCommands, item.id);
 };
 
@@ -716,6 +723,10 @@ export const searchCommDivButton = (modal: CPModal, contentEl: HTMLElement): voi
 	);
 };
 
+/**
+ * Toggles group visibility and propagates the hidden state to each plugin in the group.
+ * A plugin stays hidden if any of its other groups is also hidden.
+ */
 export async function hideOnCLick(
 	modal: QPSModal | CPModal,
 	groupNumber: number,
@@ -768,6 +779,7 @@ export async function hideOnCLick(
 	await reOpenModal(modal);
 }
 
+/** Handles click on the vertical dots button (mobile) or notes button, opening the relevant context menu. */
 export async function handleClick(
 	evt: MouseEvent | TouchEvent,
 	modal: QPSModal | CPModal
@@ -800,6 +812,10 @@ let touchCount = 0;
 const touchDelay = 300;
 let clickTimeout: NodeJS.Timeout;
 let element: HTMLElement;
+/**
+ * Simulates single/double tap on mobile by counting touches within a 300ms window.
+ * Single tap → context menu, double tap → dblclick handler.
+ */
 export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal): void {
 	touchCount++;
 	if (touchCount === 1) {
@@ -1017,8 +1033,8 @@ export function contextMenuCPM(
 			.setIcon(isenabled ? 'poweroff' : 'power')
 			.onClick(async () => {
 				isEnabled(modal, id)
-					? await (modal.app as any).plugins.disablePluginAndSave(id)
-					: await (modal.app as any).plugins.enablePluginAndSave(id);
+					? await modal.app.plugins.disablePluginAndSave(id)
+					: await modal.app.plugins.enablePluginAndSave(id);
 
 				const msg = isenabled ? 'disabled' : 'enabled';
 				new Notice(`${matchingItem.name} ${msg}`, 2500);
@@ -1047,8 +1063,8 @@ export function contextMenuCPM(
 		menu.addItem((item) => {
 			item.setTitle('Plugin github')
 				.setIcon('github')
-				.onClick(async (evt) => {
-					await openGitHubRepo(evt, modal, matchingItem);
+				.onClick(async (_evt) => {
+					await openGitHubRepo(_evt, modal, matchingItem);
 				});
 		});
 
@@ -1113,7 +1129,7 @@ async function contextMenuQPS(
 		if (Platform.isDesktop) {
 			const text =
 				matchingItem.target !== undefined
-					? `run on ${TargetPlatform[matchingItem.target]}`
+					? `run on ${TargetPlatform[matchingItem.target as unknown as keyof typeof TargetPlatform]}`
 					: 'run on Both';
 			item.setTitle(text);
 		}
@@ -1350,6 +1366,7 @@ export async function updatePlugin(
 	await reOpenModal(modal);
 }
 
+/** Finds the plugin data object from a DOM element using its data-plugin-id attribute. */
 export const findMatchingItem = (
 	modal: CPModal | QPSModal,
 	targetBlock: HTMLElement
@@ -1405,16 +1422,19 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal): void {
 			);
 			if (confirmReset) {
 				if (modal instanceof QPSModal) {
-					for (const id in installed) {
+					// Object.keys() ensures we only iterate over the object's own properties, not inherited ones
+					for (const id of Object.keys(installed)) {
 						installed[id].groupInfo.hidden = false;
 						installed[id].groupInfo.groupIndices = [];
 					}
-					for (const group in groups) groups[group].hidden = false;
+					for (const group of Object.keys(groups))
+						groups[group as unknown as number].hidden = false;
 					await reOpenModal(modal);
 					new Notice(`All groups empty`, 2500);
 				} else {
-					for (const group in groupsComm) groupsComm[group].hidden = false;
-					for (const id in commPlugins) {
+					for (const group of Object.keys(groupsComm))
+						groupsComm[group as unknown as number].hidden = false;
+					for (const id of Object.keys(commPlugins)) {
 						commPlugins[id].groupCommInfo.hidden = false;
 						commPlugins[id].groupCommInfo.groupIndices = [];
 					}
@@ -1428,6 +1448,10 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal): void {
 	});
 }
 
+/**
+ * Registers a toggle command for the plugin in Obsidian's command palette.
+ * The command is disabled (with notice) if the plugin targets a different platform.
+ */
 export async function addCommandToPlugin(
 	modal: QPSModal | QuickPluginSwitcher,
 	pluginItem: PluginInstalled

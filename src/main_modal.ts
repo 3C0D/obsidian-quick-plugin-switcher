@@ -54,6 +54,7 @@ import {
 import { CPModal } from './community-plugins_modal.ts';
 import type { KeyToSettingsMapType, PluginInstalled } from './types/global.ts';
 
+/** Main modal for QPS — lists all installed plugins with toggle, group, and filter controls. */
 export class QPSModal extends Modal {
 	header: HTMLElement;
 	items: HTMLElement;
@@ -74,26 +75,32 @@ export class QPSModal extends Modal {
 		this.plugin = plugin;
 	}
 
+	// stored as arrow functions so they can be added/removed as event listeners
 	getMousePosition = (event: MouseEvent): void => {
 		this.mousePosition = { x: event.clientX, y: event.clientY };
 	};
 	getHandleKeyDown = async (event: KeyboardEvent): Promise<void> => {
 		await handleKeyDown(event, this);
 	};
+	/** Guards all event handlers against firing during a double-click sequence. */
+	private shouldIgnoreEvent(): boolean {
+		return this.isDblClick;
+	}
+
 	getHandleContextMenu = async (evt: MouseEvent): Promise<void> => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		await handleContextMenu(evt, this);
 	};
 	getHandleDblClick = (evt: MouseEvent): void => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		handleDblClick(evt, this);
 	};
 	getHandleClick = (evt: MouseEvent): void => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		handleClick(evt, this);
 	};
 	getHandleTouch = (evt: TouchEvent): void => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		handleTouchStart(evt, this);
 	};
 
@@ -110,6 +117,7 @@ export class QPSModal extends Modal {
 		}
 	}
 
+	/** Creates the DOM structure and attaches all event listeners. */
 	container(): void {
 		const { contentEl } = this;
 		this.modalEl.addClass('qps-modal');
@@ -216,9 +224,11 @@ export class QPSModal extends Modal {
 						}
 					);
 
-					const groupNumberText = `<span class="shortcut-number">${i}:</span>`;
-					// postSpan
-					span.insertAdjacentHTML('afterbegin', groupNumberText);
+					const groupNumberText = cont.createSpan({
+						cls: 'shortcut-number',
+						text: `${i}:`
+					});
+					span.insertBefore(groupNumberText, span.firstChild);
 				}
 			);
 		}
@@ -297,6 +307,7 @@ export class QPSModal extends Modal {
 		});
 	}
 
+	/** Sets the delay for a plugin and re-enables it so the delay takes effect immediately. */
 	addDelay = async (id: string, input: HTMLInputElement): Promise<void> => {
 		const { plugin } = this;
 		const { settings } = plugin;
@@ -320,6 +331,7 @@ export class QPSModal extends Modal {
 	}
 }
 
+/** Sets the colored circle background and shows the delay time if any. */
 export function circleCSSModif(
 	modal: QPSModal | CPModal,
 	el: HTMLSpanElement,
@@ -335,6 +347,10 @@ export function circleCSSModif(
 	}
 }
 
+/**
+ * Renders the enable/disable toggle for a plugin item.
+ * Disabled for QPS itself, desktop-only plugins on mobile, and platform-mismatched plugins.
+ */
 const itemTogglePluginButton = (
 	modal: QPSModal,
 	pluginItem: PluginInstalled,
@@ -356,38 +372,35 @@ const itemTogglePluginButton = (
 		});
 };
 
+/**
+ * Renders colored group indicator circles next to the plugin name.
+ * Up to 2 groups = 1 circle, 3-4 = 2 stacked circles, 5-6 = 3 stacked circles.
+ */
+const insertElements = (input: HTMLElement, tempDiv: HTMLDivElement): void => {
+	Array.from(tempDiv.children).forEach((child) =>
+		input.insertAdjacentElement('afterend', child)
+	);
+};
+
 const addGroupCircles = (input: HTMLElement, item: PluginInstalled): void => {
 	const indices = item.groupInfo.groupIndices;
 	if (!indices.length) return;
+
+	const makeDiv = (parts: number[]): HTMLDivElement => {
+		const div = document.createElement('div');
+		div.innerHTML = getCirclesItem(parts);
+		return div;
+	};
+
 	if (indices.length < 3) {
-		const content = getCirclesItem(indices);
-		input.insertAdjacentHTML('afterend', content);
-	}
-
-	if (indices.length >= 3 && indices.length < 5) {
-		// 2 circles
-		const [valeur0, valeur1, ...part2] = indices;
-		const part1 = [valeur0, valeur1];
-
-		const content1 = getCirclesItem(part1);
-		input.insertAdjacentHTML('afterend', content1);
-
-		const content2 = getCirclesItem(part2);
-		input.insertAdjacentHTML('afterend', content2);
-	} else if (indices.length >= 5) {
-		// 3 circles
-		const [valeur0, valeur1, valeur2, valeur3, ...part3] = indices;
-		const part1 = [valeur0, valeur1];
-		const part2 = [valeur2, valeur3];
-
-		const content1 = getCirclesItem(part1);
-		input.insertAdjacentHTML('afterend', content1);
-
-		const content2 = getCirclesItem(part2);
-		input.insertAdjacentHTML('afterend', content2);
-
-		const content3 = getCirclesItem(part3);
-		input.insertAdjacentHTML('afterend', content3);
+		insertElements(input, makeDiv(indices));
+	} else if (indices.length < 5) {
+		insertElements(input, makeDiv(indices.slice(0, 2)));
+		insertElements(input, makeDiv(indices.slice(2)));
+	} else {
+		insertElements(input, makeDiv(indices.slice(0, 2)));
+		insertElements(input, makeDiv(indices.slice(2, 4)));
+		insertElements(input, makeDiv(indices.slice(4)));
 	}
 };
 
@@ -420,6 +433,7 @@ async function handleKeyDown(event: KeyboardEvent, modal: QPSModal): Promise<voi
 	}
 }
 
+/** Toggles visibility of a group via keyboard shortcut (h) or group icon/name target. */
 export const toggleVisibility = async (
 	modal: QPSModal | CPModal,
 	targetGroupIcon: HTMLElement,
@@ -436,6 +450,11 @@ export const toggleVisibility = async (
 	await hideOnCLick(modal, groupNumber, inGroup);
 };
 
+/**
+ * Handles keyboard shortcuts over a plugin item:
+ * number keys add to group, 0/Del removes, f/g/s/h open folder/github/settings/hotkeys,
+ * ctrl/meta opens the description modal.
+ */
 const handleHotkeysQPS = async (
 	modal: QPSModal,
 	evt: KeyboardEvent,
@@ -448,8 +467,8 @@ const handleHotkeysQPS = async (
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(evt, modal, pluginItem),
-		s: async () => await openPluginSettings(evt, modal, pluginItem),
-		h: async () => await showHotkeysFor(evt, modal, pluginItem)
+		s: async () => await openPluginSettings(modal, pluginItem),
+		h: async () => await showHotkeysFor(modal, pluginItem)
 	};
 	if (Platform.isDesktopApp)
 		KeyToSettingsMap['f'] = async () =>

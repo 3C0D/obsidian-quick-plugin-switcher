@@ -10,8 +10,14 @@ import {
 import { Filters, Groups, CommFilters, GroupsComm } from './types/variables.ts';
 import { removeItem } from './utils.ts';
 import { createClearGroupsMenuItem, hideOnCLick } from './modal_components.ts';
-import type { PluginCommInfo, PluginInstalled, StringString } from './types/global.ts';
+import type {
+	PluginCommInfo,
+	PluginInstalled,
+	StringString,
+	QPSSettings
+} from './types/global.ts';
 
+/** Renders the group filter dropdown, only showing non-empty groups. */
 export const byGroupDropdowns = (
 	modal: QPSModal | CPModal,
 	contentEl: HTMLElement
@@ -27,7 +33,7 @@ export const byGroupDropdowns = (
 
 	function getDropdownOptions(groups: StringString, length: number): void {
 		const dropdownOptions: StringString = {};
-		for (const groupKey in groups) {
+		for (const groupKey of Object.keys(groups)) {
 			const groupIndex = getIndexFromSelectedGroup(groupKey);
 			if (groupKey === 'SelectGroup') {
 				dropdownOptions[groupKey] = groups[groupKey] + `(${length})`;
@@ -70,7 +76,7 @@ export const addDelayToGroup = (
 
 	const setDelay = async (
 		input: HTMLInputElement,
-		settings: any,
+		settings: QPSSettings,
 		groupNumber: number,
 		span: HTMLElement,
 		modal: CPModal | QPSModal
@@ -86,6 +92,10 @@ export const addDelayToGroup = (
 	};
 };
 
+/**
+ * Applies the delay value to all plugins in the group:
+ * disables then re-enables each enabled plugin so the delay takes effect immediately.
+ */
 const applyGroupDelay = async (
 	inGroup: string[],
 	groupNumber: number,
@@ -164,7 +174,7 @@ const groupMenuQPS = (
 				if (toDisable) {
 					await Promise.all(
 						toDisable.map(async (id) => {
-							(modal.app as any).plugins.disablePluginAndSave(id);
+							modal.app.plugins.disablePluginAndSave(id);
 							installed[id].enabled = false;
 						})
 					);
@@ -308,6 +318,10 @@ export const getPluginsInGroup = (
 	}
 };
 
+/**
+ * Rebuilds the Groups/GroupsComm object to match the current numberOfGroups setting.
+ * Clears keys above the new count, then re-populates using saved custom names or defaults.
+ */
 export const setGroupTitle = (
 	modal: QPSModal | CPModal,
 	Groups: StringString,
@@ -444,7 +458,7 @@ export function addRemoveGroupMenuItems(
 			subitem.setTitle(`${groupValue}`).onClick(async () => {
 				let pluginsRemoved = false;
 				if (modal instanceof QPSModal) {
-					for (const id in installed) {
+					for (const id of Object.keys(installed)) {
 						const index =
 							installed[id].groupInfo.groupIndices.indexOf(groupNumber);
 						if (index !== -1) {
@@ -457,7 +471,7 @@ export function addRemoveGroupMenuItems(
 						}
 					}
 				} else {
-					for (const id in commPlugins) {
+					for (const id of Object.keys(commPlugins)) {
 						const index =
 							commPlugins[id].groupCommInfo.groupIndices.indexOf(
 								groupNumber
@@ -608,8 +622,9 @@ export function groupIsEmpty(groupIndex: number, modal: QPSModal | CPModal): boo
 	}
 }
 
+/** Returns the group name key (e.g. "Group1") for a given numeric index, or null if not found. */
 export function groupNameFromIndex(groups: StringString, index: number): string | null {
-	for (const key in groups) {
+	for (const key of Object.keys(groups)) {
 		if (key.endsWith(index.toString())) {
 			return key;
 		}
@@ -617,12 +632,14 @@ export function groupNameFromIndex(groups: StringString, index: number): string 
 	return null;
 }
 
+/** Extracts the numeric group index from a key like "Group3" → 3, or 0 for "SelectGroup". */
 export function getIndexFromSelectedGroup(str: string): number {
 	if (str === 'SelectGroup') return 0;
 	else return parseInt(str.slice(-1));
 }
 
 // removing groups ---------------
+/** Detects which plugin (installed or community) by checking for 'repo' field. */
 export async function rmvAllGroupsFromPlugin(
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
@@ -638,11 +655,13 @@ export async function rmvAllGroupsFromPlugin(
 	await reOpenModal(modal);
 }
 
+/** Reads the group number from the span next to the circle icon (used on dblclick of icon). */
 export function groupNbFromEmoticon(el: HTMLElement): number {
 	const groupNameEl = el.nextElementSibling;
 	return parseInt(groupNameEl?.querySelector('span')?.textContent ?? '');
 }
 
+/** Reads the group number from the first character of the group name span text. */
 export function groupNbFromGrpName(groupName: string | undefined): number {
 	return parseInt(groupName?.slice(0, 1) ?? '0');
 }

@@ -1,5 +1,6 @@
 import { TFolder, AbstractInputSuggest } from 'obsidian';
 
+/** Autocomplete suggester for vault folder paths, used in the notes folder setting. */
 export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 	textInputEl: HTMLInputElement;
 

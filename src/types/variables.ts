@@ -6,12 +6,6 @@ export const COMMPLUGINS =
 export const COMMPLUGINSTATS =
 	'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json';
 
-declare global {
-	interface Window {
-		electron: any;
-	}
-}
-
 export const Filters: StringString = {
 	all: 'all',
 	enabled: 'enabled',

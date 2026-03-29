@@ -7,6 +7,7 @@ import {
 	Platform,
 	type PluginManifest,
 	TFile,
+	normalizePath,
 	prepareSimpleSearch,
 	requestUrl,
 	setIcon
@@ -64,12 +65,7 @@ import type {
 } from './types/global.ts';
 import { translation } from './translate.ts';
 
-declare global {
-	interface Window {
-		electron: any;
-	}
-}
-
+/** Main modal for the community plugins browser. Closes back to QPSModal on exit. */
 export class CPModal extends Modal {
 	header: HTMLElement;
 	items: HTMLElement;
@@ -90,26 +86,32 @@ export class CPModal extends Modal {
 		this.plugin = plugin;
 	}
 
+	// stored as arrow functions so they can be added/removed as event listeners
 	getMousePosition = (event: MouseEvent): void => {
 		this.mousePosition = { x: event.clientX, y: event.clientY };
 	};
 	getHandleKeyDown = async (event: KeyboardEvent): Promise<void> => {
 		await handleKeyDown(event, this);
 	};
+	/** Guards all event handlers against firing during a double-click sequence. */
+	private shouldIgnoreEvent(): boolean {
+		return this.isDblClick;
+	}
+
 	getHandleContextMenu = async (evt: MouseEvent): Promise<void> => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		await handleContextMenu(evt, this);
 	};
 	getHandleDblClick = (evt: MouseEvent): void => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		handleDblClick(evt, this);
 	};
 	getHandleClick = (evt: MouseEvent): void => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		handleClick(evt, this);
 	};
 	getHandleTouch = (evt: TouchEvent): void => {
-		if (this.isDblClick) return;
+		if (this.shouldIgnoreEvent()) return;
 		handleTouchStart(evt, this);
 	};
 
@@ -126,6 +128,7 @@ export class CPModal extends Modal {
 		}
 	}
 
+	/** Creates the DOM structure and attaches all event listeners. */
 	container(): void {
 		const { contentEl } = this;
 		this.modalEl.addClass('community-plugins-modal');
@@ -243,9 +246,11 @@ export class CPModal extends Modal {
 						}
 					);
 
-					const groupNumberText = `<span class="shortcut-number">${i}:</span>`;
-					// postSpan
-					span.insertAdjacentHTML('afterbegin', groupNumberText);
+					const groupNumberText = cont.createSpan({
+						cls: 'shortcut-number',
+						text: `${i}:`
+					});
+					span.insertBefore(groupNumberText, span.firstChild);
 				}
 			);
 		}
@@ -287,27 +292,34 @@ export class CPModal extends Modal {
 		const { commPlugins, pluginStats } = settings;
 		let listItems = doSearchCPM(value, commPlugins);
 		listItems = cpmModeSort(this, listItems);
-		sortItemsBy.bind(this)(this, listItems);
-		await this.drawItemsAsync.bind(this)(listItems, pluginStats, value);
+		sortItemsBy(this, listItems);
+		await this.drawItemsAsync(listItems, pluginStats, value);
 	}
 
-	hightLightSpan(value: string, text: string): string {
-		if (value.trim() === '') {
-			return text;
-		} else {
-			const search = prepareSimpleSearch(value)(text);
-			const matches = search?.matches || [];
-			if (!matches.length) return text;
-			let newText = text;
-			matches.forEach(([start, end]) => {
-				const match = text.slice(start, end);
-				const highlighted = `<span class="highlighted">${match}</span>`;
-				newText = newText.replace(match, highlighted);
-			});
-			return newText;
-		}
+	/** Wraps search matches in <span class="highlighted"> for visual highlighting. */
+	highlightSpan(value: string, text: string): string {
+		if (value.trim() === '') return text;
+
+		const search = prepareSimpleSearch(value)(text);
+		const matches = search?.matches || [];
+		if (!matches.length) return text;
+
+		let result = '';
+		let lastIndex = 0;
+
+		matches.forEach(([start, end]) => {
+			result += text.slice(lastIndex, start);
+			result += `<span class="highlighted">${text.slice(start, end)}</span>`;
+			lastIndex = end;
+		});
+		result += text.slice(lastIndex);
+
+		return result;
 	}
 
+	/**
+	 * Renders items in batches of 50 to avoid blocking the UI on large plugin lists.
+	 */
 	async drawItemsAsync(
 		listItems: string[],
 		pluginStats: PackageInfoData,
@@ -361,7 +373,7 @@ export class CPModal extends Modal {
 						cls: 'button-container1'
 					},
 					(el) => {
-						notesButton(el, this, commPlugins[item]);
+						notesButton(el);
 					}
 				);
 				// higher because only 1 button
@@ -373,15 +385,19 @@ export class CPModal extends Modal {
 					notesButtonContainer.addClass('notes-button-background');
 				}
 				// highlight search results
-				const name = this.hightLightSpan(value, commPlugins[item].name);
-				const author = `by ${this.hightLightSpan(value, commPlugins[item].author)}`;
-				const desc = this.hightLightSpan(value, commPlugins[item].description);
+				const name = this.highlightSpan(value, commPlugins[item].name);
+				const author = `by ${this.highlightSpan(value, commPlugins[item].author)}`;
+				const desc = this.highlightSpan(value, commPlugins[item].description);
 
 				// community plugin name
 				itemContainer.createDiv(
 					{ cls: 'qps-community-item-name' },
 					(el: HTMLElement) => {
-						el.innerHTML = name;
+						const tempDiv = document.createElement('div');
+						tempDiv.innerHTML = name;
+						while (tempDiv.firstChild) {
+							el.appendChild(tempDiv.firstChild);
+						}
 						if (isInstalled(item)) {
 							el.createSpan({ cls: 'installed-span', text: 'installed' });
 						}
@@ -396,7 +412,11 @@ export class CPModal extends Modal {
 				itemContainer.createDiv(
 					{ cls: 'qps-community-item-author' },
 					(el: HTMLElement) => {
-						el.innerHTML = author;
+						const tempDiv = document.createElement('div');
+						tempDiv.innerHTML = author;
+						while (tempDiv.firstChild) {
+							el.appendChild(tempDiv.firstChild);
+						}
 					}
 				);
 
@@ -435,7 +455,11 @@ export class CPModal extends Modal {
 				itemContainer.createDiv(
 					{ cls: 'qps-community-item-desc' },
 					(el: HTMLElement) => {
-						el.innerHTML = desc;
+						const tempDiv = document.createElement('div');
+						tempDiv.innerHTML = desc;
+						while (tempDiv.firstChild) {
+							el.appendChild(tempDiv.firstChild);
+						}
 					}
 				);
 
@@ -457,6 +481,7 @@ export class CPModal extends Modal {
 	}
 }
 
+/** Generic fetch wrapper — returns parsed JSON or null on error. */
 export async function fetchData(url: string, message?: string): Promise<any> {
 	try {
 		const response = await requestUrl(url);
@@ -474,6 +499,7 @@ export async function fetchData(url: string, message?: string): Promise<any> {
 	}
 }
 
+/** Tries README.md then README.org from the GitHub API. Returns the raw API response or null. */
 export async function getReadMe(item: PluginCommInfo): Promise<any> {
 	const repo = item.repo;
 	const readmeFormats = ['README.md', 'README.org'];
@@ -526,6 +552,7 @@ export async function getReleaseVersion(
 	}
 }
 
+/** Sorts by the active sortBy setting, respecting the invertFiltersComm toggle. */
 function sortItemsBy(modal: CPModal, listItems: string[]): string[] {
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
@@ -565,6 +592,7 @@ function sortItemsBy(modal: CPModal, listItems: string[]): string[] {
 	return (sortFunctions[sortBy] || sortFunctions['Downloads'])();
 }
 
+/** Applies the active filter mode (installed, notInstalled, byGroup, hidden, hasNote). */
 function cpmModeSort(modal: CPModal, listItems: string[]): string[] {
 	const { settings } = modal.plugin;
 	const { filtersComm, commPlugins } = settings;
@@ -626,6 +654,11 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal): Promise<void
 	}
 };
 
+/**
+ * Handles keyboard shortcuts over a community plugin block:
+ * number keys add to group, 0/Del removes, g/n/s/t open github/note/stats/translate,
+ * ctrl/meta opens the README modal.
+ */
 const handleHotkeysCPM = async (
 	modal: CPModal,
 	evt: KeyboardEvent,
@@ -706,37 +739,25 @@ const addGroupCircles = (modal: CPModal, el: HTMLElement, item: string): void =>
 	const { settings } = modal.plugin;
 	const { commPlugins } = settings;
 	const indices = commPlugins[item].groupCommInfo.groupIndices;
-	if (indices.length) {
-		if (indices.length < 3) {
-			const content = getCirclesItem(indices);
-			el.insertAdjacentHTML('afterend', content);
-		}
+	if (!indices.length) return;
 
-		if (indices.length >= 3 && indices.length < 5) {
-			// 2 circles
-			const [valeur0, valeur1, ...part2] = indices;
-			const part1 = [valeur0, valeur1];
+	const insertElements = (parts: number[]): void => {
+		const div = document.createElement('div');
+		div.innerHTML = getCirclesItem(parts);
+		Array.from(div.children).forEach((child) =>
+			el.insertAdjacentElement('afterend', child)
+		);
+	};
 
-			const content1 = getCirclesItem(part1);
-			el.insertAdjacentHTML('afterend', content1);
-
-			const content2 = getCirclesItem(part2);
-			el.insertAdjacentHTML('afterend', content2);
-		} else if (indices.length >= 5) {
-			// 3 circles
-			const [valeur0, valeur1, valeur2, valeur3, ...part3] = indices;
-			const part1 = [valeur0, valeur1];
-			const part2 = [valeur2, valeur3];
-
-			const content1 = getCirclesItem(part1);
-			el.insertAdjacentHTML('afterend', content1);
-
-			const content2 = getCirclesItem(part2);
-			el.insertAdjacentHTML('afterend', content2);
-
-			const content3 = getCirclesItem(part3);
-			el.insertAdjacentHTML('afterend', content3);
-		}
+	if (indices.length < 3) {
+		insertElements(indices);
+	} else if (indices.length < 5) {
+		insertElements(indices.slice(0, 2));
+		insertElements(indices.slice(2));
+	} else {
+		insertElements(indices.slice(0, 2));
+		insertElements(indices.slice(2, 4));
+		insertElements(indices.slice(4));
 	}
 };
 
@@ -758,11 +779,13 @@ async function getPluginListFromFile(): Promise<string[] | null> {
 	}
 
 	const properties = ['openFile'];
-	const filePaths: string[] = window.electron.remote.dialog.showOpenDialogSync({
-		title: 'Pick json list file of plugins to install',
-		properties,
-		filters: [{ name: 'JsonList', extensions: ['json'] }]
-	});
+	const filePaths: string[] = (window.electron as any).remote.dialog.showOpenDialogSync(
+		{
+			title: 'Pick json list file of plugins to install',
+			properties,
+			filters: [{ name: 'JsonList', extensions: ['json'] }]
+		}
+	);
 
 	if (filePaths && filePaths.length) {
 		try {
@@ -777,19 +800,22 @@ async function getPluginListFromFile(): Promise<string[] | null> {
 				new Notice('Error: The selected file is not a valid JSON list.', 3000);
 			}
 		} catch (erreur) {
-			console.error('Error reading JSON file: ', erreur);
+			const errorMsg = erreur instanceof Error ? erreur.message : String(erreur);
+			console.error('Error reading JSON file: ', errorMsg);
 			new Notice('Error: Could not read the selected JSON file.', 3000);
 		}
 	}
 	return null;
 }
 
-export async function getPluginsList(modal: CPModal, enable = false): Promise<void> {
+export async function getPluginsList(modal: CPModal, _save = false): Promise<void> {
 	const installed = getInstalled();
 
 	if (Platform.isDesktop) {
 		// Desktop version: use file dialog
-		const filePath: string = window.electron.remote.dialog.showSaveDialogSync({
+		const filePath: string = (
+			window.electron as any
+		).remote.dialog.showSaveDialogSync({
 			title: 'Save installed plugins list as JSON',
 			filters: [{ name: 'JSON Files', extensions: ['json'] }]
 		});
@@ -800,7 +826,8 @@ export async function getPluginsList(modal: CPModal, enable = false): Promise<vo
 				fs.writeFileSync(filePath, jsonContent);
 				new Notice(`${filePath} created`, 2500);
 			} catch (error) {
-				console.error('Error saving JSON file:', error);
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				console.error('Error saving JSON file:', errorMsg);
 			}
 		}
 	} else {
@@ -811,7 +838,8 @@ export async function getPluginsList(modal: CPModal, enable = false): Promise<vo
 			await modal.app.vault.create(fileName, jsonContent);
 			new Notice(`${fileName} created in vault root`, 2500);
 		} catch (error) {
-			console.error('Error saving JSON file:', error);
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			console.error('Error saving JSON file:', errorMsg);
 			new Notice('Error saving plugin list', 2500);
 		}
 	}
@@ -826,7 +854,7 @@ export async function installPluginFromOtherVault(
 		return;
 	}
 
-	const dirPath: string[] = window.electron.remote.dialog.showOpenDialogSync({
+	const dirPath: string[] = (window.electron as any).remote.dialog.showOpenDialogSync({
 		title: 'Select your vault directory, you want plugins list from',
 		properties: ['openDirectory']
 	});
@@ -880,7 +908,8 @@ export async function installPluginFromOtherVault(
 				}
 			}
 		} catch (error) {
-			console.error('Error reading plugins directory:', error);
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			console.error('Error reading plugins directory:', errorMsg);
 			new Notice('Error reading plugins directory', 2500);
 			return;
 		}
@@ -900,7 +929,7 @@ export async function installPluginFromOtherVault(
 export async function updateNotes(plugin: QuickPluginSwitcher): Promise<void> {
 	const name = 'Community plugins notes';
 	const dir = plugin.settings.commPluginsNotesFolder;
-	const path = dir ? dir + '/' + name + '.md' : name + '.md';
+	const path = normalizePath(dir ? `${dir}/${name}.md` : `${name}.md`);
 	const note = this.app.vault.getAbstractFileByPath(path) as TFile;
 
 	const { commPlugins } = plugin.settings;
@@ -924,8 +953,12 @@ export async function updateNotes(plugin: QuickPluginSwitcher): Promise<void> {
 	}
 }
 
+/**
+ * Opens or creates the shared notes file, finds or creates the plugin's H1 section,
+ * then opens SeeNoteModal for editing.
+ */
 export async function handleNote(
-	e: KeyboardEvent | MouseEvent | TouchEvent,
+	_e: KeyboardEvent | MouseEvent | TouchEvent,
 	modal: CPModal,
 	pluginItem: PluginCommInfo,
 	_this?: ReadMeModal
@@ -936,7 +969,7 @@ export async function handleNote(
 	if (dir && !modal.app.vault.getAbstractFileByPath(dir)) {
 		await modal.app.vault.createFolder(dir);
 	}
-	const path = dir ? dir + '/' + name + '.md' : name + '.md';
+	const path = normalizePath(dir ? `${dir}/${name}.md` : `${name}.md`);
 	note = modal.app.vault.getFileByPath(path);
 
 	if (!note) {
@@ -991,6 +1024,7 @@ export async function handleNote(
 	).open();
 }
 
+/** Callback from SeeNoteModal — handles the 4 possible outcomes: null, empty, unchanged, updated. */
 async function cb(
 	result: string | null,
 	modal: CPModal,
@@ -1046,6 +1080,7 @@ async function updatePluginSettings(
 	await modal.plugin.saveSettings();
 }
 
+/** Refreshes both the ReadMeModal (if open) and the CPModal after a note change. */
 function reopenModals(modal: CPModal, _this?: ReadMeModal): void {
 	if (_this) {
 		_this.onOpen();
@@ -1054,6 +1089,7 @@ function reopenModals(modal: CPModal, _this?: ReadMeModal): void {
 	modal.onOpen();
 }
 
+/** Escapes special regex characters in a string for safe use in RegExp constructor. */
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

@@ -88,6 +88,10 @@ export class QPSSettingTab extends PluginSettingTab {
 			});
 	}
 
+	/**
+	 * Debounced to avoid firing on every slider tick.
+	 * Asks for confirmation when reducing group count, since higher group assignments will be lost.
+	 */
 	private debouncedHandleChange = debounce(
 		async (
 			key: 'numberOfGroups' | 'numberOfGroupsComm',
@@ -115,6 +119,7 @@ export class QPSSettingTab extends PluginSettingTab {
 		true
 	);
 
+	/** Strips group indices above the new value from all plugins to avoid orphaned group references. */
 	private async handleGroupReduction(
 		key: 'numberOfGroups' | 'numberOfGroupsComm',
 		value: number
@@ -123,7 +128,8 @@ export class QPSSettingTab extends PluginSettingTab {
 		const targetGroup =
 			key === 'numberOfGroups' ? settings.installed : settings.commPlugins;
 
-		for (const pluginKey in targetGroup) {
+		// Use Object.keys() instead of for...in to avoid iterating over prototype properties
+		for (const pluginKey of Object.keys(targetGroup)) {
 			const plugin = targetGroup[pluginKey];
 			const groupInfo =
 				key === 'numberOfGroups'

@@ -29,7 +29,7 @@ import { openGitHubRepo, getHkeyCondition } from './modal_components.ts';
 import { translation } from './translate.ts';
 import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 
-// for plugin description
+/** Modal showing a short description of an installed plugin (name, version, author, description). */
 export class DescriptionModal extends Modal {
 	constructor(
 		app: App,
@@ -60,15 +60,10 @@ export class DescriptionModal extends Modal {
 				href: pluginItem.authorUrl
 			});
 
-		let desc;
-		Object.values(this.plugin.settings.commPlugins).forEach(
-			(item: PluginCommInfo) => {
-				if (item.id === pluginItem.id) {
-					desc = item.description;
-				}
-			}
-		);
-		desc = desc ? desc : pluginItem.description;
+		// fallback to manifest description if plugin not yet in commPlugins
+		const desc =
+			this.plugin.settings.commPlugins[pluginItem.id]?.description ??
+			pluginItem.description;
 		contentEl.createEl('p', { text: desc });
 	}
 
@@ -80,6 +75,7 @@ export class DescriptionModal extends Modal {
 
 type ConfirmCallback = (confirmed: boolean) => void;
 
+/** Generic confirmation modal with a checkmark/cross button pair. */
 class ConfirmModal extends Modal {
 	constructor(
 		app: App,
@@ -127,6 +123,7 @@ class ConfirmModal extends Modal {
 	}
 }
 
+/** Wraps ConfirmModal in a Promise so callers can await the user's choice. */
 async function openConfirmModal(
 	app: App,
 	message: string,
@@ -146,6 +143,7 @@ async function openConfirmModal(
 	});
 }
 
+/** Public entry point for confirm dialogs — uses this.app from the calling context. */
 export async function confirm(
 	message: string,
 	width?: number,
@@ -159,9 +157,14 @@ export async function confirm(
 	);
 }
 
+/**
+ * Modal that fetches and renders the README of a community plugin from GitHub.
+ * Also provides action buttons (install/enable/disable/uninstall) and keyboard shortcuts.
+ */
 export class ReadMeModal extends Modal {
 	comp: Component;
 	mousePosition: { x: number; y: number };
+	// custom scope to register shortcuts without conflicting with Obsidian's global ones
 	scope: Scope = new Scope(this.app.scope);
 	constructor(
 		app: App,
@@ -172,6 +175,7 @@ export class ReadMeModal extends Modal {
 		this.modal = modal;
 		this.pluginItem = pluginItem;
 		this.modalEl.addClass('read-me-modal');
+		// Component needed to properly manage the lifecycle of MarkdownRenderer
 		this.comp = new Component();
 		this.comp.load();
 	}
@@ -195,6 +199,9 @@ export class ReadMeModal extends Modal {
 			await openGitHubRepo(e, this.modal, pluginItem);
 		});
 
+		const isQPS = id === 'quick-plugin-switcher';
+
+		// not installed: show Install / installed: show enable, disable, uninstall...
 		const divButtons = contentEl.createDiv({ cls: 'read-me-buttons' });
 		if (!isInstalled(id)) {
 			new ButtonComponent(divButtons)
@@ -214,71 +221,68 @@ export class ReadMeModal extends Modal {
 					);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();
+					// refresh the modal buttons to reflect the new state
 					await reOpenModal(this.modal);
 				});
 		} else {
-			const manifests = (this.app as any).plugins.manifests || {};
-			let condition: boolean;
-			if (!isEnabled(this.modal, manifests[pluginItem.id].id)) {
+			// installed but disabled: only show Enable
+			if (!isEnabled(this.modal, pluginItem.id)) {
 				new ButtonComponent(divButtons)
 					.setButtonText('Enable')
 					.onClick(async () => {
-						await (this.modal.app as any).plugins.enablePluginAndSave(
-							pluginItem.id
-						);
+						await this.modal.app.plugins.enablePluginAndSave(pluginItem.id);
 						await this.onOpen();
 						this.modal.plugin.installedUpdate();
 						new Notice(`${pluginItem.name} enabled`, 2500);
 						await reOpenModal(this.modal);
 					});
 			} else {
+				// installed and enabled: show Options if it has a settings tab
 				const pluginSettings = this.modal.app.setting.openTabById(pluginItem.id);
 				if (pluginSettings) {
 					new ButtonComponent(divButtons)
 						.setButtonText('Options')
-						.onClick(async (e) => {
-							await openPluginSettings(e, this.modal, pluginItem);
+						.onClick(async () => {
+							await openPluginSettings(this.modal, pluginItem);
 						});
 				}
 
-				condition = await getHkeyCondition(this.modal, pluginItem);
+				// show Hotkeys button only if the plugin has registered commands
+				const condition = await getHkeyCondition(this.modal, pluginItem);
 				if (condition) {
 					new ButtonComponent(divButtons)
 						.setButtonText('Hotkeys')
-						.onClick(async (e) => {
-							await showHotkeysFor(e, this.modal, pluginItem);
+						.onClick(async () => {
+							await showHotkeysFor(this.modal, pluginItem);
 						});
 				}
-				if (id !== 'quick-plugin-switcher')
-					new ButtonComponent(divButtons)
-						.setButtonText('Disable')
-						.onClick(async () => {
-							await (this.modal.app as any).plugins.disablePluginAndSave(
-								pluginItem.id
-							);
-							await this.onOpen();
-							new Notice(`${pluginItem.name} disabled`, 2500);
-							await reOpenModal(this.modal);
-						});
-			}
-			if (id !== 'quick-plugin-switcher')
 				new ButtonComponent(divButtons)
-					.setButtonText('Uninstall')
+					.setButtonText('Disable')
+					.setDisabled(isQPS)
 					.onClick(async () => {
-						try {
-							await (this.modal.app as any).plugins.uninstallPlugin(
-								pluginItem.id
-							);
-							await this.onOpen();
-							new Notice(`${pluginItem.name} uninstalled`, 2500);
-							await reOpenModal(this.modal);
-						} catch (error: any) {
-							new Notice(
-								`Failed to uninstall ${pluginItem.name}: ${error.message}`,
-								5000
-							);
-						}
+						await this.modal.app.plugins.disablePluginAndSave(pluginItem.id);
+						await this.onOpen();
+						new Notice(`${pluginItem.name} disabled`, 2500);
+						await reOpenModal(this.modal);
 					});
+			}
+			// Uninstall always available for installed plugins (except QPS itself)
+			new ButtonComponent(divButtons)
+				.setButtonText('Uninstall')
+				.setDisabled(isQPS)
+				.onClick(async () => {
+					try {
+						await this.modal.app.plugins.uninstallPlugin(pluginItem.id);
+						await this.onOpen();
+						new Notice(`${pluginItem.name} uninstalled`, 2500);
+						await reOpenModal(this.modal);
+					} catch (error: any) {
+						new Notice(
+							`Failed to uninstall ${pluginItem.name}: ${error.message}`,
+							5000
+						);
+					}
+				});
 		}
 
 		const shortcuts = contentEl.createDiv({
@@ -314,12 +318,13 @@ export class ReadMeModal extends Modal {
 			return;
 		}
 		const decoder = new TextDecoder('utf-8');
+		// GitHub API returns file content as base64, decode to bytes then to UTF-8 string
 		const content = decoder.decode(base64ToUint8Array(data.content));
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, '/', this.comp);
 
-		// || add a menu with translate
+		// track mouse position to show context menu at the right spot
 		this.modalEl.addEventListener('mousemove', (event) => {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
@@ -333,19 +338,17 @@ export class ReadMeModal extends Modal {
 			await translation(selectedContent);
 		});
 
-		(this.scope.register(
+		this.scope.register(
 			[],
 			'n',
 			async (e) => await handleNote(e, this.modal, pluginItem)
-		),
-			this.scope.register(
-				[],
-				'g',
-				async (e) => await openGitHubRepo(e, this.modal, pluginItem)
-			),
-			this.scope.register([], 'escape', async (event) => {
-				this.close();
-			}));
+		);
+		this.scope.register(
+			[],
+			'g',
+			async (e) => await openGitHubRepo(e, this.modal, pluginItem)
+		);
+		this.scope.register([], 'escape', async () => this.close());
 
 		this.modalEl.addEventListener('contextmenu', (event) => {
 			event.preventDefault();
@@ -375,6 +378,10 @@ export class ReadMeModal extends Modal {
 	}
 }
 
+/**
+ * Modal to create or edit a markdown note attached to a community plugin.
+ * H1 titles are forbidden since they are used as section separators in the shared notes file.
+ */
 export class SeeNoteModal extends Modal {
 	constructor(
 		app: App,
@@ -400,11 +407,13 @@ export class SeeNoteModal extends Modal {
 			text.setValue(this.sectionContent ?? '');
 			text.inputEl.rows = 40;
 			text.inputEl.cols = 82;
+			// save on blur rather than on a save button, to avoid losing content
 			text.inputEl.onblur = async () => {
 				this.sectionContent = text.getValue();
 				const lines = this.sectionContent.split('\n');
 				let stop = false;
 				for (const line of lines) {
+					// H1 would break the notes file structure, copy to clipboard as fallback
 					if (line.startsWith('# ')) {
 						new Notice(
 							'H1 are not allowed, content was paste in clipboard',
@@ -421,7 +430,6 @@ export class SeeNoteModal extends Modal {
 				if (this.sectionContent && !this.sectionContent.endsWith('\n')) {
 					this.sectionContent = this.sectionContent + '\n';
 				}
-				this.sectionContent;
 				await this.cb(this.sectionContent);
 			};
 		});

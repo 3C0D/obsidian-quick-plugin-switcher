@@ -1,3 +1,4 @@
+import type { CommandsCommandsRecord } from 'obsidian-typings';
 import { CPModal } from './community-plugins_modal.ts';
 import QuickPluginSwitcher from './main.ts';
 import { QPSModal } from './main_modal.ts';
@@ -6,7 +7,7 @@ export function isEnabled(
 	modal: QuickPluginSwitcher | CPModal | QPSModal,
 	id: string
 ): boolean {
-	return modal.app.plugins.enabledPlugins.has(id);
+	return modal.app.plugins.getPlugin(id) !== null;
 }
 
 export function removeItem<T>(arr: Array<T>, value: T): Array<T> {
@@ -81,8 +82,8 @@ export function calculateTimeElapsed(datePasted: Date): string {
 	return 'seconds ago';
 }
 
-export function hasKeyStartingWith(obj: Record<string, string>, prefix: string): boolean {
-	for (const key in obj) {
+export function hasKeyStartingWith(obj: CommandsCommandsRecord, prefix: string): boolean {
+	for (const key of Object.keys(obj)) {
 		if (key.startsWith(prefix)) {
 			return true;
 		}
@@ -90,11 +91,13 @@ export function hasKeyStartingWith(obj: Record<string, string>, prefix: string):
 	return false;
 }
 
+/** Returns the current text selection from the DOM window */
 export function getSelectedContent(): string | undefined {
 	const selection = window.getSelection();
 	return selection?.toString();
 }
 
+/** Decodes a base64 string into a Uint8Array. */
 export function base64ToUint8Array(base64: string): Uint8Array {
 	const binaryString = atob(base64);
 	const length = binaryString.length;

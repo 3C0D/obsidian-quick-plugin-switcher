@@ -1,40 +1,9 @@
 import 'obsidian';
 import { CommFilters, Filters, SortBy, TargetPlatform } from './variables.ts';
 import { PluginManifest } from 'obsidian';
+import 'obsidian-typings';
 
 declare module 'obsidian' {
-	interface App {
-		setting: Setting;
-		plugins: Plugins;
-		commands: Commands;
-		isMobile: boolean;
-	}
-
-	interface Plugins {
-		manifests: Record<string, PluginManifest>;
-		plugins: Record<string, Plugin>;
-		installPlugin: (
-			repo: string,
-			version: string,
-			manifest: PluginManifest
-		) => Promise<void>;
-		enabledPlugins: Set<string>;
-		disablePlugin: (id: string) => Promise<void>;
-		disablePluginAndSave: (id: string) => Promise<void>;
-		enablePlugin: (id: string) => Promise<void>;
-		enablePluginAndSave: (id: string) => Promise<void>;
-		getPlugin: (id: string) => Plugin | null;
-	}
-
-	interface Commands {
-		executeCommandById: (commandId: string) => boolean;
-		removeCommand: (commandId: string) => void;
-	}
-
-	interface Setting extends Modal {
-		openTabById: (id: string) => Record<string, any>;
-	}
-
 	interface DataAdapter {
 		getFullPath: (normalizedPath: string) => string;
 	}

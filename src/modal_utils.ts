@@ -24,25 +24,19 @@ export const reset = async (modal: QPSModal): Promise<void> => {
 	}
 };
 
+/** Sorts installed plugins by name alphabetically. */
 export const sortByName = (plugin: Plugin, listItems: string[]): void => {
 	const { settings } = plugin;
 	const { installed } = settings;
 	listItems.sort((a, b) => installed[a].name.localeCompare(installed[b].name));
 };
 
+/** Sorts installed plugins by most switched (toggle count) descending. */
 export const sortSwitched = (plugin: Plugin, listItems: string[]): void => {
 	const { settings } = plugin;
 	const { installed } = settings;
 	listItems.sort((a, b) => installed[b].switched - installed[a].switched);
 };
-
-// export const getCommandCondition = async function (modal: QPSModal | CPModal, item: PluginInstalled | PluginCommInfo
-// ): Promise<Record<string, Command> | undefined> {
-// 	const pluginCommands = await modal.app.setting.openTabById(
-// 		item.id
-// 	)?.app?.commands.commands;
-// 	return pluginCommands;
-// };
 
 export const togglePlugin = async (
 	modal: QPSModal,
@@ -62,7 +56,7 @@ export async function openDirectoryInFileManager(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
 ): Promise<void> {
-	const shell = window.electron.remote.shell;
+	const shell = (window.electron as any).remote.shell;
 	const filePath = modal.app.vault.adapter.getFullPath(pluginItem.dir as string);
 	try {
 		await shell.openPath(filePath);
@@ -72,6 +66,10 @@ export async function openDirectoryInFileManager(
 	}
 }
 
+/**
+ * Disables then immediately re-enables a plugin without saving between the two steps,
+ * used to apply a delayed start without persisting the disabled state.
+ */
 export const delayedReEnable = async (modal: QPSModal, id: string): Promise<void> => {
 	const { plugin } = modal;
 	const { settings } = plugin;
@@ -81,6 +79,10 @@ export const delayedReEnable = async (modal: QPSModal, id: string): Promise<void
 	installed[id].enabled = true;
 };
 
+/**
+ * Enables a plugin, using enablePlugin (no save) if it has a delay configured,
+ * so the delay logic in onload can handle it — otherwise uses enablePluginAndSave.
+ */
 export const conditionalEnable = async (modal: QPSModal, id: string): Promise<void> => {
 	const { installed } = modal.plugin.settings;
 	if (installed[id].delayed && installed[id].time > 0) {
@@ -92,10 +94,15 @@ export const conditionalEnable = async (modal: QPSModal, id: string): Promise<vo
 	}
 };
 
+/** Selects all text in an input, used to make it easy to replace the current value. */
 export const selectValue = (input: HTMLInputElement | null): void => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
+/**
+ * Sorts and filters the plugin list according to the active filter mode.
+ * Also handles resetting switched counts when plugin.reset is true.
+ */
 export const modeSort = (
 	modal: QPSModal,
 	plugin: Plugin,
@@ -144,6 +151,10 @@ export const modeSort = (
 	return (sortFunctions[filters] || sortFunctions[Filters.all])();
 };
 
+/**
+ * Replaces an element in-place with a focused text input pre-filled with currentValue.
+ * Used for inline editing of group names and delay values.
+ */
 export function createInput(
 	el: HTMLElement | null,
 	currentValue: string
@@ -161,6 +172,10 @@ export function createInput(
 	}
 }
 
+/**
+ * Sets modal.pressed to true for 1ms — used to debounce accidental double triggers
+ * on touch/click events where a keydown and click fire simultaneously.
+ */
 export const pressDelay = (modal: CPModal | QPSModal): void => {
 	modal.pressed = true;
 	setTimeout(() => {
@@ -168,6 +183,7 @@ export const pressDelay = (modal: CPModal | QPSModal): void => {
 	}, 1);
 };
 
+/** Returns the list of installed plugin ids from Obsidian's manifest registry. */
 export function getInstalled(): string[] {
 	return Object.keys(this.app.plugins.manifests);
 }
@@ -204,11 +220,9 @@ export async function reOpenModal(
 }
 
 export async function openPluginSettings(
-	evt: MouseEvent | TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ): Promise<void> {
-	evt.preventDefault();
 	const enabled = modal.plugin.settings.installed[pluginItem.id]?.enabled;
 
 	if (!enabled) {
@@ -225,12 +239,14 @@ export async function openPluginSettings(
 	await pluginSettings?.display();
 }
 
+/**
+ * Navigates to the hotkeys settings tab and pre-fills the search with the plugin name,
+ * so the user lands directly on that plugin's hotkeys.
+ */
 export const showHotkeysFor = async function (
-	evt: MouseEvent | TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ): Promise<void> {
-	evt.preventDefault();
 	const enabled =
 		modal instanceof CPModal
 			? modal.plugin.settings.installed[pluginItem.id].enabled
@@ -258,10 +274,14 @@ export const showHotkeysFor = async function (
 	tab.searchComponent.inputEl.blur();
 };
 
+/**
+ * Rewrites relative URLs in a README's markdown/HTML content to absolute GitHub URLs,
+ * so that images and links render correctly when displayed outside of GitHub.
+ */
 export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): string {
 	const baseUrl = `https://githubusercontent.com/${pluginItem.repo}/raw/HEAD/`;
 
-	// add space before closing quote
+	// absolute URLs need a space before closing quote to prevent Obsidian from swallowing the quote
 	content = content.replace(
 		/(?!href=\s*)(["'])(https?:\/\/[^"'\s]+)(["'])/g,
 		(_, openChar, url, closeChar): string => {
@@ -269,10 +289,11 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 		}
 	);
 
+	// relative URLs need to be resolved against the raw GitHub base URL
 	const normalizeUrl = (url: string): string => {
 		if (url.startsWith('http')) return url;
 		return url.startsWith('.')
-			? `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`
+			? `https://github.com/${pluginItem.repo}/raw/HEAD${url.substring(1)}`
 			: `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 	};
 
@@ -294,7 +315,8 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 			];
 
 			for (const pattern of patterns) {
-				const newMatch = pattern.exec(match);
+				// pattern.exec is RegExp.exec, not a shell command — false positive for OS injection
+				const newMatch = pattern.exec(match); // nosemgrep
 				if (newMatch && newMatch[1]) {
 					return parseInt(newMatch[1], 10);
 				}
@@ -308,7 +330,7 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 		};
 	};
 
-	// images
+	// convert <img> tags to markdown syntax, preserving dimensions for Obsidian's image resizing
 	content = content.replace(
 		/<img[^>]*src=["']?(\.?\/?[^"'\s]+)["']?[^>]*>/gi,
 		(match, url) => {
@@ -325,13 +347,13 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 		}
 	);
 
-	// [](url) ![](url)
+	// resolve relative markdown links (but not anchors # or absolute /)
 	content = content.replace(
 		/(!?)\[(.*?)\]\(((?!http)(?!#)(?!\/).*?)\)/g,
 		(_, isImage, text, link) => `${isImage}[${text}](${baseUrl}${link})`
 	);
 
-	// github links
+	// rewrite github.com blob URLs to raw.githubusercontent.com so images actually load
 	content = content.replace(
 		/https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)\.(png|jpe?g|gif|svg|webp)/gi,
 		(_, user, repo, branch, path, ext) =>
@@ -341,6 +363,7 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo): 
 	return content;
 }
 
+/** Returns the element currently under the stored mouse position in the modal. */
 export function getElementFromMousePosition(modal: QPSModal | CPModal): Element | null {
 	if (modal.mousePosition) {
 		const elementFromPoint = document.elementFromPoint(
@@ -352,6 +375,7 @@ export function getElementFromMousePosition(modal: QPSModal | CPModal): Element 
 	return null;
 }
 
+/** Focuses the search input after a delay, needed because the DOM may not be ready yet. */
 export function focusSearchInput(time: number): void {
 	setTimeout(() => {
 		(

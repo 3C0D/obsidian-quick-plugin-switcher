@@ -16,8 +16,7 @@ import {
 import { focusSearchInput } from './modal_utils.ts';
 import { addCommandToPlugin } from './modal_components.ts';
 
-// si fichier notes n'existe pas. enlever la classe verte sur tout les plugins notés
-
+// note: if the notes file doesn't exist, the green class on noted plugins should be removed
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
 	lengthAll = 0;
@@ -32,6 +31,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.addCommands();
 	}
 
+	/** Initializes the plugin on startup */
 	private async initializePlugin(): Promise<void> {
 		this.settings.savedVersion = this.manifest.version;
 		await this.updateInstalledPlugins();
@@ -40,17 +40,22 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.handleDelayedPlugins();
 	}
 
+	/** Removes plugins from settings that are no longer installed in Obsidian. */
 	async updateInstalledPlugins(): Promise<void> {
 		const installed = this.settings.installed || {};
 		const manifests = this.app.plugins.manifests || {};
 
-		for (const pluginId in installed) {
+		for (const pluginId of Object.keys(installed)) {
 			if (!(pluginId in manifests)) {
 				delete installed[pluginId];
 			}
 		}
 	}
 
+	/**
+	 * Monkey-patches disablePluginAndSave/enablePluginAndSave to intercept calls
+	 * and keep our enabled state in sync for delayed or platform-dependent plugins.
+	 */
 	async setupPluginWrappers(): Promise<void> {
 		const { wrapper1, wrapper2 } = this.wrapDisableEnablePluginAndSave(
 			Object.keys(this.settings.installed),
@@ -61,10 +66,11 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.register(wrapper2);
 	}
 
+	/** Ensures our enabled state matches Obsidian's for non-delayed, non-platform-dependent plugins. */
 	async syncEnabled(): Promise<void> {
 		const installed = this.settings.installed;
 		// plugin has been toggled from obsidian UI ? or if is delayed unabled
-		for (const id in installed) {
+		for (const id of Object.keys(installed)) {
 			if (
 				isEnabled(this, id) !== installed[id].enabled &&
 				!installed[id].delayed &&
@@ -79,6 +85,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.saveSettings();
 	}
 
+	/** Returns true if the plugin is configured for a platform other than the current one. */
 	isPlatformMismatch(pluginItem: PluginInstalled): boolean {
 		return (
 			(pluginItem.target === TargetPlatform.Mobile && Platform.isDesktop) ||
@@ -86,6 +93,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		);
 	}
 
+	/** Returns true if the plugin is restricted to a specific platform (not Both). */
 	isPlatformDependent(pluginItem: PluginInstalled): boolean {
 		return (
 			pluginItem.target === TargetPlatform.Mobile ||
@@ -93,10 +101,14 @@ export default class QuickPluginSwitcher extends Plugin {
 		);
 	}
 
+	/**
+	 * At startup: re-registers commandified plugins, disables platform-mismatched plugins,
+	 * and schedules delayed plugins via setTimeout.
+	 */
 	async handleDelayedPlugins(): Promise<void> {
 		const installed = this.settings.installed;
 
-		for (const id in installed) {
+		for (const id of Object.keys(installed)) {
 			const pluginItem = installed[id];
 
 			if (pluginItem.commandified) {
@@ -158,6 +170,12 @@ export default class QuickPluginSwitcher extends Plugin {
 		}, 700);
 	}
 
+	/**
+	 * Wraps disablePluginAndSave/enablePluginAndSave using monkey-around to intercept
+	 * calls made from Obsidian's UI and keep our internal enabled state in sync.
+	 * For delayed plugins, enablePluginAndSave is redirected to enablePlugin (no save)
+	 * so the delay logic is preserved.
+	 */
 	wrapDisableEnablePluginAndSave(
 		stillInstalled: string[],
 		cb: () => Promise<void>
@@ -209,6 +227,11 @@ export default class QuickPluginSwitcher extends Plugin {
 		return { wrapper1, wrapper2 };
 	}
 
+	/**
+	 * Syncs settings.installed with Obsidian's manifest registry:
+	 * removes uninstalled plugins, adds new ones, and updates manifest fields.
+	 * Also handles enabled state drift for delayed/platform-dependent plugins.
+	 */
 	async installedUpdate(): Promise<void> {
 		const installed = this.settings.installed || {};
 		const manifests = this.app.plugins.manifests || {};
@@ -216,14 +239,14 @@ export default class QuickPluginSwitcher extends Plugin {
 		// plugin have been deleted from obsidian UI ?
 		const stillInstalled: string[] = [];
 
-		for (const id in installed) {
+		for (const id of Object.keys(installed)) {
 			if (id in manifests) stillInstalled.push(id);
 			else {
 				delete installed[id];
 			}
 		}
 
-		for (const key in manifests) {
+		for (const key of Object.keys(manifests)) {
 			// plugin has been toggled from obsidian UI ? or if is delayed unabled
 			const inListId = stillInstalled.find((id) => id === key);
 			if (inListId) {
@@ -281,7 +304,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.lengthEnabled = 0;
 		this.lengthDisabled = 0;
 
-		for (const key in installed) {
+		for (const key of Object.keys(installed)) {
 			if (installed[key].enabled) {
 				this.lengthEnabled++;
 			} else {
@@ -290,6 +313,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	}
 
+	/** Fetches community plugins list and stats, merges into settings preserving group/note data. */
 	async pluginsCommInfo(): Promise<boolean> {
 		console.warn('Fetching community plugins info...');
 		try {
@@ -330,6 +354,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	}
 
+	/** Throttles func to at most once every 2 minutes to avoid hammering the GitHub API. */
 	exeAfterDelay = async (func: () => Promise<boolean>): Promise<void> => {
 		const currentTime: number = Date.now();
 		const timeSinceLastFetch = currentTime - this.settings.lastFetchExe;
