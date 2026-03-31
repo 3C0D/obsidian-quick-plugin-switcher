@@ -1,8 +1,7 @@
 #!/usr/bin/env tsx
 
 console.log(`
-🎯 Obsidian Plugin - Quick Help
-Available commands in this autonomous plugin
+🎯 Obsidian Plugin Commands
 
 ═══════════════════════════════════════════════════════════════════
 
@@ -13,7 +12,7 @@ DEVELOPMENT:
   yarn dev                         # Build dev mode with hot reload
   yarn build                       # Build production
   yarn real                        # Build + install in real vault
-  yarn lint, lint:fix             # ESLint verification/correction
+  yarn lint, lint:fix             # ESLint check/fix
 
 VERSION & RELEASE:
   yarn v, update-version           # Update version (package.json + manifest.json)
@@ -39,13 +38,13 @@ GIT OPERATIONS:
 ⚙️ CONFIGURATION
 
 ENVIRONMENT:
-  - Edit .env to define TEST_VAULT and REAL_VAULT
-  - Autonomous scripts (no external dependencies)
+  - Edit .env to set TEST_VAULT and REAL_VAULT
+  - Standalone scripts (no external dependencies)
   - Automatic Git sync verification before push
 
-AUTONOMOUS PLUGIN:
+STANDALONE PLUGIN:
   ✅ Independent local scripts
-  ✅ Integrated TypeScript and ESLint configuration
+  ✅ Built-in TypeScript and ESLint configuration
   ✅ GitHub Actions workflows with Yarn
   ✅ No dependency on obsidian-plugin-config
 `);

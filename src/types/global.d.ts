@@ -4,6 +4,21 @@ import { PluginManifest } from 'obsidian';
 import 'obsidian-typings';
 
 declare module 'obsidian' {
+	// 	interface App {
+	// 		// setting: Setting;
+	// 		// commands: Commands;
+	// 		// isMobile: boolean;
+	// 	}
+
+	// interface Commands {
+	// 	executeCommandById: (commandId: string) => boolean;
+	// 	removeCommand: (commandId: string) => void;
+	// }
+
+	// interface Setting extends Modal {
+	// 	openTabById: (id: string) => Record<string, any>;
+	// }
+
 	interface DataAdapter {
 		getFullPath: (normalizedPath: string) => string;
 	}

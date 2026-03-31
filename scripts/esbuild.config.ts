@@ -1,12 +1,18 @@
-import esbuild from "esbuild";
-import process from "process";
-import builtins from "builtin-modules";
-import { config } from "dotenv";
-import path from "path";
-import { readFileSync } from "fs";
-import { rm } from "fs/promises";
-import fs from "fs";
-import { isValidPath, copyFilesToTargetDir, askQuestion, createReadlineInterface, removeMainCss } from "./utils.js";
+import esbuild from 'esbuild';
+import process from 'process';
+import builtins from 'builtin-modules';
+import { config } from 'dotenv';
+import path from 'path';
+import { readFileSync } from 'fs';
+import { rm } from 'fs/promises';
+import fs from 'fs';
+import {
+	isValidPath,
+	copyFilesToTargetDir,
+	askQuestion,
+	createReadlineInterface,
+	removeMainCss
+} from './utils.js';
 
 // Determine the plugin directory (where the script is called from)
 const pluginDir = process.cwd();
@@ -15,104 +21,108 @@ const pluginDir = process.cwd();
 const rl = createReadlineInterface();
 
 async function promptForVaultPath(envKey: string): Promise<string> {
-  const vaultType = envKey === "REAL_VAULT" ? "real" : "test";
-  const usage = envKey === "REAL_VAULT"
-    ? "for final plugin installation"
-    : "for development and testing";
+	const vaultType = envKey === 'REAL_VAULT' ? 'real' : 'test';
+	const usage =
+		envKey === 'REAL_VAULT'
+			? 'for final plugin installation'
+			: 'for development and testing';
 
-  console.log(`❓ ${envKey} path is required ${usage}`);
-  const path = await askQuestion(`📝 Enter your ${vaultType} vault path (or Ctrl+C to cancel): `, rl);
+	console.log(`❓ ${envKey} path is required ${usage}`);
+	const path = await askQuestion(
+		`📝 Enter your ${vaultType} vault path (or Ctrl+C to cancel): `,
+		rl
+	);
 
-  if (!path) {
-    console.log('❌ No path provided, exiting...');
-    process.exit(1);
-  }
+	if (!path) {
+		console.log('❌ No path provided, exiting...');
+		process.exit(1);
+	}
 
-  return path;
+	return path;
 }
 
-
-
 async function updateEnvFile(envKey: string, vaultPath: string): Promise<void> {
-  const envPath = path.join(pluginDir, '.env');
-  let envContent = '';
+	const envPath = path.join(pluginDir, '.env');
+	let envContent = '';
 
-  // Read existing .env if it exists
-  try {
-    envContent = readFileSync(envPath, 'utf8');
-  } catch {
-    // File doesn't exist, start with empty content
-  }
+	// Read existing .env if it exists
+	try {
+		envContent = readFileSync(envPath, 'utf8');
+	} catch {
+		// File doesn't exist, start with empty content
+	}
 
-  // Update or add the variable
-  const regex = new RegExp(`^${envKey}=.*$`, 'm');
-  const newLine = `${envKey}=${vaultPath}`;
+	// Update or add the variable
+	const regex = new RegExp(`^${envKey}=.*$`, 'm');
+	const newLine = `${envKey}=${vaultPath}`;
 
-  if (regex.test(envContent)) {
-    envContent = envContent.replace(regex, newLine);
-  } else {
-    envContent += envContent.endsWith('\n') ? '' : '\n';
-    envContent += newLine + '\n';
-  }
+	if (regex.test(envContent)) {
+		envContent = envContent.replace(regex, newLine);
+	} else {
+		envContent += envContent.endsWith('\n') ? '' : '\n';
+		envContent += newLine + '\n';
+	}
 
-  // Write back to .env
-  await import('fs').then(fs => fs.writeFileSync(envPath, envContent));
-  console.log(`✅ Updated ${envKey} in .env file`);
+	// Write back to .env
+	await import('fs').then((fs) => fs.writeFileSync(envPath, envContent));
+	console.log(`✅ Updated ${envKey} in .env file`);
 }
 
 function validateVaultPath(vaultPath: string): boolean {
-  // Check if the path contains .obsidian directory
-  const obsidianPath = path.join(vaultPath, ".obsidian");
-  const pluginsPath = path.join(vaultPath, ".obsidian", "plugins");
+	// Check if the path contains .obsidian directory
+	const obsidianPath = path.join(vaultPath, '.obsidian');
+	const pluginsPath = path.join(vaultPath, '.obsidian', 'plugins');
 
-  return fs.existsSync(obsidianPath) && fs.existsSync(pluginsPath);
+	return fs.existsSync(obsidianPath) && fs.existsSync(pluginsPath);
 }
 
 function getVaultPath(vaultPath: string): string {
-  // Validate that this is a proper vault path
-  if (!validateVaultPath(vaultPath)) {
-    console.error(`❌ Invalid vault path: ${vaultPath}`);
-    console.error(`   The path must contain a .obsidian/plugins directory`);
-    console.error(`   Please enter a valid Obsidian vault path`);
-    process.exit(1);
-  }
+	// Validate that this is a proper vault path
+	if (!validateVaultPath(vaultPath)) {
+		console.error(`❌ Invalid vault path: ${vaultPath}`);
+		console.error(`   The path must contain a .obsidian/plugins directory`);
+		console.error(`   Please enter a valid Obsidian vault path`);
+		process.exit(1);
+	}
 
-  // Check if the path already contains the plugins directory path
-  const pluginsPath = path.join(".obsidian", "plugins");
-  if (vaultPath.includes(pluginsPath)) {
-    return path.join(vaultPath, manifest.id);
-  } else {
-    return path.join(vaultPath, ".obsidian", "plugins", manifest.id);
-  }
+	// Check if the path already contains the plugins directory path
+	const pluginsPath = path.join('.obsidian', 'plugins');
+	if (vaultPath.includes(pluginsPath)) {
+		return path.join(vaultPath, manifest.id);
+	} else {
+		return path.join(vaultPath, '.obsidian', 'plugins', manifest.id);
+	}
 }
-const manifestPath = path.join(pluginDir, "manifest.json");
+const manifestPath = path.join(pluginDir, 'manifest.json');
 
 // Check if manifest exists (for plugin-config itself, it might not exist)
 if (!fs.existsSync(manifestPath)) {
-  console.log("⚠️  No manifest.json found - this script is designed for Obsidian plugins");
-  console.log("   If you're building plugin-config itself, use 'tsc' instead");
-  process.exit(0);
+	console.log(
+		'⚠️  No manifest.json found - this script is designed for Obsidian plugins'
+	);
+	console.log("   If you're building plugin-config itself, use 'tsc' instead");
+	process.exit(0);
 }
 
-const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
 
 config();
 
 const EXTERNAL_DEPS = [
-  "obsidian",
-  "electron",
-  "@codemirror/autocomplete",
-  "@codemirror/collab",
-  "@codemirror/commands",
-  "@codemirror/language",
-  "@codemirror/lint",
-  "@codemirror/search",
-  "@codemirror/state",
-  "@codemirror/view",
-  "@lezer/common",
-  "@lezer/highlight",
-  "@lezer/lr",
-  ...builtins
+	'obsidian',
+	'electron',
+	'@codemirror/autocomplete',
+	'@codemirror/collab',
+	'@codemirror/commands',
+	'@codemirror/language',
+	'@codemirror/lint',
+	'@codemirror/search',
+	'@codemirror/state',
+	'@codemirror/view',
+	'@lezer/common',
+	'@lezer/highlight',
+	'@lezer/lr',
+	...builtins
 ];
 
 const BANNER = `/*
@@ -121,159 +131,185 @@ if you want to view the source, please visit the github repository of this plugi
 */`;
 
 async function validateEnvironment(): Promise<void> {
-  const srcMainPath = path.join(pluginDir, "src/main.ts");
-  if (!await isValidPath(srcMainPath)) {
-    throw new Error("Invalid path for src/main.ts. main.ts must be in the src directory");
-  }
-  if (!await isValidPath(manifestPath)) {
-    throw new Error("Invalid path for manifest.json");
-  }
+	const srcMainPath = path.join(pluginDir, 'src/main.ts');
+	if (!(await isValidPath(srcMainPath))) {
+		throw new Error(
+			'Invalid path for src/main.ts. main.ts must be in the src directory'
+		);
+	}
+	if (!(await isValidPath(manifestPath))) {
+		throw new Error('Invalid path for manifest.json');
+	}
 }
 
 async function getBuildPath(isProd: boolean): Promise<string> {
-  // Check if we should use real vault (either -r flag or "real" argument)
-  const useRealVault = process.argv.includes("-r") || process.argv.includes("real");
+	// Check if we should use real vault (either -r flag or "real" argument)
+	const useRealVault = process.argv.includes('-r') || process.argv.includes('real');
 
-  // If production build without redirection, return plugin directory
-  if (isProd && !useRealVault) {
-    return pluginDir;
-  }
+	// If production build without redirection, return plugin directory
+	if (isProd && !useRealVault) {
+		return pluginDir;
+	}
 
-  // Determine which path to use
-  const envKey = useRealVault ? "REAL_VAULT" : "TEST_VAULT";
-  const vaultPath = process.env[envKey]?.trim();
+	// Determine which path to use
+	const envKey = useRealVault ? 'REAL_VAULT' : 'TEST_VAULT';
+	const vaultPath = process.env[envKey]?.trim();
 
-  // If empty or undefined, we're already in the plugin folder
-  if (!vaultPath) {
-    // Check if we're in Obsidian plugins folder
-    const currentPath = process.cwd();
-    const isInObsidianPlugins = currentPath.includes('.obsidian/plugins') ||
-      currentPath.includes('.obsidian\\plugins');
+	// If empty or undefined, we're already in the plugin folder
+	if (!vaultPath) {
+		// Check if we're in Obsidian plugins folder
+		const currentPath = process.cwd();
+		const isInObsidianPlugins =
+			currentPath.includes('.obsidian/plugins') ||
+			currentPath.includes('.obsidian\\plugins');
 
-    if (isInObsidianPlugins) {
-      // In obsidian/plugins: allow in-place development
-      console.log(`ℹ️  Building in Obsidian plugins folder (in-place development)`);
-      return pluginDir;
-    } else {
-      // External development: prompt for missing vault path
-      const newPath = await promptForVaultPath(envKey);
-      await updateEnvFile(envKey, newPath);
-      config();
-      return getVaultPath(newPath);
-    }
-  }
+		if (isInObsidianPlugins) {
+			// In obsidian/plugins: allow in-place development
+			console.log(`ℹ️  Building in Obsidian plugins folder (in-place development)`);
+			return pluginDir;
+		} else {
+			// External development: prompt for missing vault path
+			const newPath = await promptForVaultPath(envKey);
+			await updateEnvFile(envKey, newPath);
+			config();
+			return getVaultPath(newPath);
+		}
+	}
 
-  // If we reach here, use the vault path directly
-  return getVaultPath(vaultPath);
+	// If we reach here, use the vault path directly
+	return getVaultPath(vaultPath);
 }
 
-async function createBuildContext(buildPath: string, isProd: boolean, entryPoints: string[], hasSass: boolean): Promise<esbuild.BuildContext> {
-  const plugins = [
-    // Add SASS plugin if SCSS files are detected
-    ...(hasSass ? [
-      await (async () => {
-        try {
-          // @ts-expect-error - esbuild-sass-plugin is installed during injection
-          const { sassPlugin } = await import('esbuild-sass-plugin');
-          return sassPlugin({
-            syntax: 'scss',
-            style: 'expanded',
-          });
-        } catch (error) {
-          console.warn('⚠️  esbuild-sass-plugin not found. Install it with: yarn add -D esbuild-sass-plugin');
-          throw error;
-        }
-      })(),
-      {
-        name: 'remove-main-css',
-        setup(build: esbuild.PluginBuild): void {
-          build.onEnd(async (result) => {
-            if (result.errors.length === 0) {
-              await removeMainCss(buildPath);
-            }
-          });
-        },
-      }
-    ] : []),
-    {
-      name: "copy-to-plugins-folder",
-      setup: (build: esbuild.PluginBuild): void => {
-        build.onEnd(async () => {
-          // if real or build
-          if (isProd) {
-            if (process.argv.includes("-r") || process.argv.includes("real")) {
-              await copyFilesToTargetDir(buildPath);
-              console.log(`Successfully installed in ${buildPath}`);
-            } else {
-              const folderToRemove = path.join(buildPath, "_.._");
-              if (await isValidPath(folderToRemove)) {
-                await rm(folderToRemove, { recursive: true });
-              }
-              console.log("Built done in initial folder");
-            }
-          }
-          // if watch (dev)
-          else {
-            await copyFilesToTargetDir(buildPath);
-          }
-        });
-      }
-    }
-  ];
+async function createBuildContext(
+	buildPath: string,
+	isProd: boolean,
+	entryPoints: string[],
+	hasSass: boolean
+): Promise<esbuild.BuildContext> {
+	const plugins = [
+		// Add SASS plugin if SCSS files are detected
+		...(hasSass
+			? [
+					await (async () => {
+						try {
+							// @ts-expect-error - esbuild-sass-plugin is installed during injection
+							const { sassPlugin } = await import('esbuild-sass-plugin');
+							return sassPlugin({
+								syntax: 'scss',
+								style: 'expanded'
+							});
+						} catch (error) {
+							console.warn(
+								'⚠️  esbuild-sass-plugin not found. Install it with: yarn add -D esbuild-sass-plugin'
+							);
+							throw error;
+						}
+					})(),
+					{
+						name: 'remove-main-css',
+						setup(build: esbuild.PluginBuild): void {
+							build.onEnd(async (result) => {
+								if (result.errors.length === 0) {
+									await removeMainCss(buildPath);
+								}
+							});
+						}
+					}
+				]
+			: []),
+		{
+			name: 'copy-to-plugins-folder',
+			setup: (build: esbuild.PluginBuild): void => {
+				build.onEnd(async () => {
+					// if real or build
+					if (isProd) {
+						if (
+							process.argv.includes('-r') ||
+							process.argv.includes('real')
+						) {
+							await copyFilesToTargetDir(buildPath);
+							console.log(`Successfully installed in ${buildPath}`);
+						} else {
+							const folderToRemove = path.join(buildPath, '_.._');
+							if (await isValidPath(folderToRemove)) {
+								await rm(folderToRemove, { recursive: true });
+							}
+							console.log('Built done in initial folder');
+						}
+					}
+					// if watch (dev)
+					else {
+						await copyFilesToTargetDir(buildPath);
+					}
+				});
+			}
+		}
+	];
 
-  return await esbuild.context({
-    banner: { js: BANNER },
-    minify: isProd,
-    entryPoints,
-    bundle: true,
-    external: EXTERNAL_DEPS,
-    format: "cjs",
-    target: "esNext",
-    platform: "node",
-    logLevel: "info",
-    sourcemap: isProd ? false : "inline",
-    treeShaking: true,
-    outdir: buildPath,
-    outbase: path.join(pluginDir, "src"),
-    plugins
-  });
+	return await esbuild.context({
+		banner: { js: BANNER },
+		minify: isProd,
+		entryPoints,
+		bundle: true,
+		external: EXTERNAL_DEPS,
+		format: 'cjs',
+		target: 'esNext',
+		platform: 'node',
+		logLevel: 'info',
+		sourcemap: isProd ? false : 'inline',
+		treeShaking: true,
+		outdir: buildPath,
+		outbase: path.join(pluginDir, 'src'),
+		plugins
+	});
 }
 
 async function main(): Promise<void> {
-  try {
-    await validateEnvironment();
-    const isProd = process.argv[2] === "production";
-    const buildPath = await getBuildPath(isProd);
-    console.log(buildPath === pluginDir
-      ? "Building in initial folder"
-      : `Building in ${buildPath}`);
+	try {
+		await validateEnvironment();
+		const isProd = process.argv[2] === 'production';
+		const buildPath = await getBuildPath(isProd);
+		console.log(
+			buildPath === pluginDir
+				? 'Building in initial folder'
+				: `Building in ${buildPath}`
+		);
 
-    // Check for SCSS first, then CSS in src, then in root
-    const srcStylesScssPath = path.join(pluginDir, "src/styles.scss");
-    const srcStylesPath = path.join(pluginDir, "src/styles.css");
-    const rootStylesPath = path.join(pluginDir, "styles.css");
+		// Check for SCSS first, then CSS in src, then in root
+		const srcStylesScssPath = path.join(pluginDir, 'src/styles.scss');
+		const srcStylesPath = path.join(pluginDir, 'src/styles.css');
+		const rootStylesPath = path.join(pluginDir, 'styles.css');
 
-    const scssExists = await isValidPath(srcStylesScssPath);
-    const stylePath = scssExists ? srcStylesScssPath :
-      await isValidPath(srcStylesPath) ? srcStylesPath :
-        await isValidPath(rootStylesPath) ? rootStylesPath : "";
+		const scssExists = await isValidPath(srcStylesScssPath);
+		const stylePath = scssExists
+			? srcStylesScssPath
+			: (await isValidPath(srcStylesPath))
+				? srcStylesPath
+				: (await isValidPath(rootStylesPath))
+					? rootStylesPath
+					: '';
 
-    const mainTsPath = path.join(pluginDir, "src/main.ts");
-    const entryPoints = stylePath ? [mainTsPath, stylePath] : [mainTsPath];
-    const context = await createBuildContext(buildPath, isProd, entryPoints, scssExists);
+		const mainTsPath = path.join(pluginDir, 'src/main.ts');
+		const entryPoints = stylePath ? [mainTsPath, stylePath] : [mainTsPath];
+		const context = await createBuildContext(
+			buildPath,
+			isProd,
+			entryPoints,
+			scssExists
+		);
 
-    if (isProd) {
-      await context.rebuild();
-      rl.close();
-      process.exit(0);
-    } else {
-      await context.watch();
-    }
-  } catch (error) {
-    console.error("Build failed:", error);
-    rl.close();
-    process.exit(1);
-  }
+		if (isProd) {
+			await context.rebuild();
+			rl.close();
+			process.exit(0);
+		} else {
+			await context.watch();
+		}
+	} catch (error) {
+		console.error('Build failed:', error);
+		rl.close();
+		process.exit(1);
+	}
 }
 
 main().catch(console.error);

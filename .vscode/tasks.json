@@ -1,53 +1,61 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Lint",
-			"type": "shell",
-			"command": "yarn lint",
-			"group": "test",
-			"presentation": { "reveal": "always", "panel": "shared" },
-			"problemMatcher": ["$eslint-stylish"]
-		},
-		{
-			"label": "Lint: Fix",
-			"type": "shell",
-			"command": "yarn lint:fix",
-			"group": "test",
-			"presentation": { "reveal": "always", "panel": "shared" },
-			"problemMatcher": ["$eslint-stylish"]
-		},
-		{
-			"label": "Prettier: Check",
-			"type": "shell",
-			"command": "npx prettier --check \"src/**/*.ts\"",
-			"group": "test",
-			"presentation": { "reveal": "always", "panel": "shared" },
-			"problemMatcher": []
-		},
-		{
-			"label": "Prettier: Fix",
-			"type": "shell",
-			"command": "npx prettier --write \"src/**/*.ts\"",
-			"group": "test",
-			"presentation": { "reveal": "always", "panel": "shared" },
-			"problemMatcher": []
-		},
-		{
-			"label": "Build",
-			"type": "shell",
-			"command": "yarn build",
-			"group": { "kind": "build", "isDefault": true },
-			"presentation": { "reveal": "always", "panel": "shared" },
-			"problemMatcher": ["$tsc"]
-		},
-		{
-			"label": "Cleanup: Lint + Prettier + Build",
-			"dependsOrder": "sequence",
-			"dependsOn": ["Lint: Fix", "Prettier: Fix", "Build"],
-			"group": "build",
-			"presentation": { "reveal": "always", "panel": "shared" },
-			"problemMatcher": []
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lint",
+      "type": "shell",
+      "command": "yarn lint",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "Lint: Fix",
+      "type": "shell",
+      "command": "yarn lint:fix",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "Prettier: Check",
+      "type": "shell",
+      "command": "yarn prettier",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prettier: Fix",
+      "type": "shell",
+      "command": "yarn prettier:fix",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "yarn build",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Obsidian Inject",
+      "type": "shell",
+      "command": "obsidian-inject",
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Cleanup: Lint + Prettier + Build",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Lint: Fix", "Prettier: Fix", "Build"],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
 }

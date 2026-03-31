@@ -1,19 +1,17 @@
 {
   "compilerOptions": {
-    "types": [
-      "obsidian-typings"
-    ],
+    "types": ["obsidian-typings"],
     "paths": {
       "obsidian-typings/implementations": [
-        "./node_modules/obsidian-typings/dist/implementations.d.ts",
-        "./node_modules/obsidian-typings/dist/implementations.cjs"
+        "./node_modules/obsidian-typings/dist/cjs/implementations.d.cts",
+        "./node_modules/obsidian-typings/dist/esm/implementations.mjs"
       ]
     },
-    "inlineSourceMap": true,
-    "inlineSources": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ES2021",
+    "inlineSourceMap": true,
+    "inlineSources": true,
     "allowJs": true,
     "noImplicitAny": true,
     "importHelpers": true,
@@ -25,17 +23,8 @@
     "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "lib": [
-      "DOM",
-      "ES2021"
-    ]
+    "lib": ["DOM", "ES2021"]
   },
-  "include": [
-    "./src/**/*.ts",
-    "./scripts/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "eslint.config.ts"
-  ]
+  "include": ["./src/**/*.ts", "./scripts/**/*.ts"],
+  "exclude": ["node_modules", "eslint.config.ts"]
 }
