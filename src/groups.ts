@@ -10,12 +10,6 @@ import {
 import { Filters, Groups, CommFilters, GroupsComm } from './types/variables.ts';
 import { removeItem } from './utils.ts';
 import { createClearGroupsMenuItem, hideOnCLick } from './modal_components.ts';
-import type {
-	PluginCommInfo,
-	PluginInstalled,
-	StringString,
-	QPSSettings
-} from './types/global.ts';
 
 /** Renders the group filter dropdown, only showing non-empty groups. */
 export const byGroupDropdowns = (

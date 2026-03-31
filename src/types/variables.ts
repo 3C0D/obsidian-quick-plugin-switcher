@@ -1,5 +1,3 @@
-import type { QPSSettings, StringString } from './global.ts';
-
 export const COMMPLUGINS =
 	'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json';
 

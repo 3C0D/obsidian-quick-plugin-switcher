@@ -6,7 +6,6 @@ import { CPModal } from './community-plugins_modal.ts';
 import { getHkeyCondition } from './modal_components.ts';
 import { Filters } from './types/variables.ts';
 import { getIndexFromSelectedGroup } from './groups.ts';
-import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 
 /**
  * Reset most switched values.

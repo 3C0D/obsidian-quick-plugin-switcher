@@ -41,7 +41,7 @@ export async function translation(selectedContent: string): Promise<void> {
 	}
 	const translated = await translate(selectedContent, 'en');
 	if (!translated) return;
-	const translation = translated.translation;
+	const translation = (translated as { translation?: string }).translation;
 	if (!translation) {
 		new Notice('translator not valid. check your settings', 4000);
 		return;

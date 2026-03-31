@@ -57,11 +57,7 @@ import {
 	getIndexFromSelectedGroup,
 	rmvAllGroupsFromPlugin
 } from './groups.ts';
-import type {
-	KeyToSettingsMapType,
-	PackageInfoData,
-	PluginCommInfo
-} from './types/global.ts';
+import type { KeyToSettingsMapType } from './types/global.ts';
 import { translation } from './translate.ts';
 
 /** Main modal for the community plugins browser. Closes back to QPSModal on exit. */

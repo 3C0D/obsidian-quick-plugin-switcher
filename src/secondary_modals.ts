@@ -23,7 +23,6 @@ import {
 import { base64ToUint8Array, getSelectedContent, isEnabled } from './utils.ts';
 import { openGitHubRepo, getHkeyCondition } from './modal_components.ts';
 import { translation } from './translate.ts';
-import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 
 /** Modal showing a short description of an installed plugin (name, version, author, description). */
 export class DescriptionModal extends Modal {
@@ -310,7 +309,7 @@ export class ReadMeModal extends Modal {
 
 		const div = contentEl.createDiv({ cls: 'qps-read-me' });
 
-		const data = await getReadMe(pluginItem);
+		const data = (await getReadMe(pluginItem)) as GitHubFileResponse | null;
 
 		if (!data) {
 			return;

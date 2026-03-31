@@ -50,7 +50,6 @@ import {
 	groupNbFromGrpName,
 	addDelayToGroup
 } from './groups.ts';
-import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 import type QuickPluginSwitcher from './main.ts';
 import slug from 'slug';
 import { translation } from './translate.ts';

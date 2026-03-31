@@ -4,7 +4,6 @@ import { QPSModal } from './main_modal.ts';
 import { isEnabled } from './utils.ts';
 import { QPSSettingTab } from './settings.ts';
 import { fetchData, updateNotes } from './community-plugins_modal.ts';
-import type { PluginCommInfo, PluginInstalled, QPSSettings } from './types/global.ts';
 import {
 	COMMPLUGINS,
 	COMMPLUGINSTATS,
@@ -317,10 +316,11 @@ export default class QuickPluginSwitcher extends Plugin {
 	async pluginsCommInfo(): Promise<boolean> {
 		console.warn('Fetching community plugins info...');
 		try {
-			const [plugins, stats] = await Promise.all([
-				fetchData(COMMPLUGINS),
-				fetchData(COMMPLUGINSTATS)
-			]);
+			const plugins = (await fetchData(COMMPLUGINS)) as PluginCommInfo[];
+			const stats = (await fetchData(COMMPLUGINSTATS)) as Record<
+				string,
+				{ downloads: number; updated: number }
+			>;
 
 			if (!plugins || !stats) {
 				console.error('Failed to fetch plugin data or stats.');

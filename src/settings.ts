@@ -3,7 +3,6 @@ import { debounce, PluginSettingTab, Setting } from 'obsidian';
 import type QuickPluginSwitcher from './main.ts';
 import { confirm } from './secondary_modals.ts';
 import { FolderSuggest } from './suggester.ts';
-import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
 
 export class QPSSettingTab extends PluginSettingTab {
 	plugin: QuickPluginSwitcher;

@@ -52,7 +52,7 @@ import {
 	groupNbFromGrpName
 } from './groups.ts';
 import type { CPModal } from './community-plugins_modal.ts';
-import type { KeyToSettingsMapType, PluginInstalled } from './types/global.ts';
+import type { KeyToSettingsMapType } from './types/global.ts';
 
 /** Main modal for QPS — lists all installed plugins with toggle, group, and filter controls. */
 export class QPSModal extends Modal {
