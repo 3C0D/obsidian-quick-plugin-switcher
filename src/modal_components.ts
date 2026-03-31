@@ -1048,7 +1048,8 @@ export function contextMenuCPM(
 					new Notice(`${matchingItem.name} uninstalled`, 2500);
 					await reOpenModal(modal);
 				} catch (error: unknown) {
-					const message = error instanceof Error ? error.message : String(error);
+					const message =
+						error instanceof Error ? error.message : String(error);
 					new Notice(
 						`Failed to uninstall ${matchingItem.name}: ${message}`,
 						3500
@@ -1131,7 +1132,9 @@ async function contextMenuQPS(
 					: 'run on Both';
 			item.setTitle(text);
 		}
-		const submenu = Platform.isMobile ? menu : ((item as MenuItem).setSubmenu() as Menu);
+		const submenu = Platform.isMobile
+			? menu
+			: ((item as MenuItem).setSubmenu() as Menu);
 		// Get only the string keys
 		Object.keys(TargetPlatform)
 			.filter((key) => isNaN(Number(key)))
@@ -1227,7 +1230,8 @@ async function contextMenuQPS(
 						await modal.plugin.installedUpdate();
 						await reOpenModal(modal);
 					} catch (error: unknown) {
-						const message = error instanceof Error ? error.message : String(error);
+						const message =
+							error instanceof Error ? error.message : String(error);
 						new Notice(
 							`Failed to uninstall ${matchingItem.name}: ${message}`,
 							3500

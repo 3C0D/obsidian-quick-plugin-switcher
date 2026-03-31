@@ -56,7 +56,7 @@ export async function openDirectoryInFileManager(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
 ): Promise<void> {
-	const shell = ((window as unknown as WindowWithElectron).electron!).remote.shell;
+	const shell = (window as unknown as WindowWithElectron).electron!.remote.shell;
 	const filePath = modal.app.vault.adapter.getFullPath(pluginItem.dir as string);
 	try {
 		await shell.openPath(filePath);

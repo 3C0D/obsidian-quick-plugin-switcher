@@ -267,10 +267,7 @@ async function uninstallAllPluginsInGroup(
 			new Notice(`${commPlugins[id].name} uninstalled`, 5000);
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
-			new Notice(
-				`Failed to uninstall ${commPlugins[id].name}: ${message}`,
-				5000
-			);
+			new Notice(`Failed to uninstall ${commPlugins[id].name}: ${message}`, 5000);
 		}
 	}
 	await reOpenModal(modal);

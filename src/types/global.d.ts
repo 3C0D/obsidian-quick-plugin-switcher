@@ -9,8 +9,12 @@ declare global {
 		electron?: {
 			remote: {
 				dialog: {
-					showOpenDialogSync(options: Record<string, unknown>): string[] | undefined;
-					showSaveDialogSync(options: Record<string, unknown>): string | undefined;
+					showOpenDialogSync(
+						options: Record<string, unknown>
+					): string[] | undefined;
+					showSaveDialogSync(
+						options: Record<string, unknown>
+					): string | undefined;
 				};
 				shell: {
 					openPath(path: string): Promise<string>;

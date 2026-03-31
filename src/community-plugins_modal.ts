@@ -528,7 +528,10 @@ export async function getManifest(
 	const repo = commPlugins[id]?.repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/HEAD/manifest.json`;
 
-	return (await fetchData(repoURL, `Error fetching manifest for ${id}:`)) as PluginManifest | null;
+	return (await fetchData(
+		repoURL,
+		`Error fetching manifest for ${id}:`
+	)) as PluginManifest | null;
 }
 
 export async function getReleaseVersion(
@@ -778,13 +781,13 @@ async function getPluginListFromFile(): Promise<string[] | null> {
 	}
 
 	const properties = ['openFile'];
-	const filePaths = (window as unknown as WindowWithElectron).electron!.remote.dialog.showOpenDialogSync(
-		{
-			title: 'Pick json list file of plugins to install',
-			properties,
-			filters: [{ name: 'JsonList', extensions: ['json'] }]
-		}
-	) as string[] | undefined;
+	const filePaths = (
+		window as unknown as WindowWithElectron
+	).electron!.remote.dialog.showOpenDialogSync({
+		title: 'Pick json list file of plugins to install',
+		properties,
+		filters: [{ name: 'JsonList', extensions: ['json'] }]
+	}) as string[] | undefined;
 
 	if (filePaths && filePaths.length) {
 		try {
@@ -813,8 +816,8 @@ export async function getPluginsList(modal: CPModal, _save = false): Promise<voi
 	if (Platform.isDesktop) {
 		// Desktop version: use file dialog
 		const filePath = (
-			(window as unknown as WindowWithElectron).electron!
-		).remote.dialog.showSaveDialogSync({
+			window as unknown as WindowWithElectron
+		).electron!.remote.dialog.showSaveDialogSync({
 			title: 'Save installed plugins list as JSON',
 			filters: [{ name: 'JSON Files', extensions: ['json'] }]
 		}) as string | undefined;
@@ -853,7 +856,9 @@ export async function installPluginFromOtherVault(
 		return;
 	}
 
-	const dirPath = ((window as unknown as WindowWithElectron).electron!).remote.dialog.showOpenDialogSync({
+	const dirPath = (
+		window as unknown as WindowWithElectron
+	).electron!.remote.dialog.showOpenDialogSync({
 		title: 'Select your vault directory, you want plugins list from',
 		properties: ['openDirectory']
 	}) as string[] | undefined;

@@ -273,7 +273,8 @@ export class ReadMeModal extends Modal {
 						new Notice(`${pluginItem.name} uninstalled`, 2500);
 						await reOpenModal(this.modal);
 					} catch (error: unknown) {
-						const message = error instanceof Error ? error.message : String(error);
+						const message =
+							error instanceof Error ? error.message : String(error);
 						new Notice(
 							`Failed to uninstall ${pluginItem.name}: ${message}`,
 							5000
