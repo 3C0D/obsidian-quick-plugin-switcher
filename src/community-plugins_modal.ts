@@ -678,7 +678,7 @@ const handleHotkeysCPM = async (
 		s: async () => showStats(pluginItem),
 		t: async () => {
 			const selectedContent = getSelectedContent() ?? '';
-			await translation(selectedContent);
+			await translation(modal.app, selectedContent);
 		}
 	};
 

@@ -987,7 +987,7 @@ export function contextMenuCPM(
 		);
 		menu.addItem((item) =>
 			item.setTitle('Translate (t)').onClick(async () => {
-				await translation(selectedContent);
+				await translation(modal.app, selectedContent);
 			})
 		);
 		menu.addSeparator();

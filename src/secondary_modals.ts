@@ -332,7 +332,7 @@ export class ReadMeModal extends Modal {
 				new Notice('no selection', 4000);
 				return;
 			}
-			await translation(selectedContent);
+			await translation(this.app, selectedContent);
 		});
 
 		this.scope.register(
@@ -359,7 +359,7 @@ export class ReadMeModal extends Modal {
 				);
 				menu.addItem((item) =>
 					item.setTitle('translate (t)').onClick(async () => {
-						await translation(selectedContent);
+						await translation(this.app, selectedContent);
 					})
 				);
 

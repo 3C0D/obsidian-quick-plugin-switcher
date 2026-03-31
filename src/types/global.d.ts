@@ -111,6 +111,21 @@ declare global {
 		commPluginsNotesFolder: string;
 		keepDropDownValues: boolean;
 	}
+
+	interface TranslatorApi {
+		valid: boolean;
+		translate(text: string, from: string, to: string): Promise<unknown>;
+	}
+
+	interface TranslatePluginApi {
+		translator?: TranslatorApi;
+		current_language?: string;
+		loadData(): Promise<{
+			target_language_preference: 'last' | 'specific' | 'display';
+			last_used_target_languages: string[];
+			default_target_language: string;
+		}>;
+	}
 }
 
 declare module 'obsidian' {

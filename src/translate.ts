@@ -1,23 +1,30 @@
 import type { App } from 'obsidian';
 import { Notice, Modal } from 'obsidian';
 
+function getTranslatePlugin(app: App): TranslatePluginApi | null {
+	const plugin = app.plugins.plugins.translate;
+	if (!plugin) return null;
+	return plugin as unknown as TranslatePluginApi;
+}
+
 /** Checks if the obsidian-translate plugin is installed and has a valid translator configured. */
-function canTranslate(): boolean {
-	return this.plugin.translator && this.plugin.translator.valid;
+function canTranslate(app: App): boolean {
+	const plugin = getTranslatePlugin(app);
+	return plugin?.translator?.valid ?? false;
 }
 
 /**
  * Translates text using the obsidian-translate plugin.
  * Target language is determined by that plugin's own settings (last used, specific, or display language).
  */
-async function translate(text: string, from: string): Promise<unknown> {
+async function translate(app: App, text: string, from: string): Promise<unknown> {
 	let to = '';
-	const plugin = this.app.plugins.plugins.translate;
+	const plugin = getTranslatePlugin(app);
 	if (!plugin) {
 		new Notice('install obsidian-translate and select a translator');
 		return;
 	}
-	if (!canTranslate) {
+	if (!canTranslate(app)) {
 		new Notice('translator not valid. check your settings', 4000);
 		return;
 	}
@@ -28,25 +35,30 @@ async function translate(text: string, from: string): Promise<unknown> {
 	} else if (loaded_settings.target_language_preference === 'specific') {
 		to = loaded_settings.default_target_language;
 	} else if (loaded_settings.target_language_preference === 'display') {
-		to = plugin.current_language;
+		to = plugin.current_language ?? loaded_settings.default_target_language;
 	}
 
-	return plugin.translator.translate(text, from, to);
+	const translator = plugin.translator;
+	if (!translator) {
+		new Notice('translator not valid. check your settings', 4000);
+		return;
+	}
+	return translator.translate(text, from, to);
 }
 
-export async function translation(selectedContent: string): Promise<void> {
+export async function translation(app: App, selectedContent: string): Promise<void> {
 	if (!selectedContent) {
 		new Notice('no content selected', 2000);
 		return;
 	}
-	const translated = await translate(selectedContent, 'en');
+	const translated = await translate(app, selectedContent, 'en');
 	if (!translated) return;
 	const translation = (translated as { translation?: string }).translation;
 	if (!translation) {
 		new Notice('translator not valid. check your settings', 4000);
 		return;
 	}
-	new TranslateModal(this.app, translation).open();
+	new TranslateModal(app, translation).open();
 }
 
 /** Displays the translated text in a modal, split by line breaks. */
