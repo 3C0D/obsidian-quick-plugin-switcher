@@ -126,6 +126,11 @@ declare global {
 			default_target_language: string;
 		}>;
 	}
+
+	interface HotkeysTabLike {
+		searchComponent: { inputEl: HTMLInputElement };
+		updateHotkeyVisibility: () => void;
+	}
 }
 
 declare module 'obsidian' {

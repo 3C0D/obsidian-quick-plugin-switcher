@@ -1006,7 +1006,7 @@ export function contextMenuCPM(
 	}
 	menu.addItem((item) => {
 		item.setTitle('Install plugin')
-			.setDisabled(isInstalled(id) || id === 'quick-plugin-switcher')
+			.setDisabled(isInstalled(modal.app, id) || id === 'quick-plugin-switcher')
 			.setIcon('log-in')
 			.onClick(async () => {
 				const manifest = await getManifest(modal, id);
@@ -1027,7 +1027,7 @@ export function contextMenuCPM(
 	menu.addItem((item) => {
 		const isenabled = isEnabled(modal, id);
 		item.setTitle(isenabled ? 'Disable plugin' : 'Enable plugin')
-			.setDisabled(!isInstalled(id) || id === 'quick-plugin-switcher')
+			.setDisabled(!isInstalled(modal.app, id) || id === 'quick-plugin-switcher')
 			.setIcon(isenabled ? 'poweroff' : 'power')
 			.onClick(async () => {
 				isEnabled(modal, id)
@@ -1041,7 +1041,7 @@ export function contextMenuCPM(
 	});
 	menu.addItem((item) => {
 		item.setTitle('Uninstall plugin')
-			.setDisabled(!isInstalled(id) || id === 'quick-plugin-switcher')
+			.setDisabled(!isInstalled(modal.app, id) || id === 'quick-plugin-switcher')
 			.setIcon('log-out')
 			.onClick(async () => {
 				try {
@@ -1192,7 +1192,7 @@ async function contextMenuQPS(
 			});
 	});
 
-	if (isInstalled(matchingItem.id)) {
+	if (isInstalled(modal.app, matchingItem.id)) {
 		menu.addSeparator();
 
 		// Check if it's a dev plugin (has package.json)

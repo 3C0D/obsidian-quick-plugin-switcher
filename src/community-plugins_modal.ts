@@ -177,12 +177,12 @@ export class CPModal extends Modal {
 		new DropdownComponent(contentEl)
 			.addOptions({
 				all: `All(${Object.keys(settings.commPlugins).length})`,
-				installed: `Installed(${getInstalled().length})`,
+				installed: `Installed(${getInstalled(this.app).length})`,
 				notInstalled: Platform.isMobile
 					? 'Not Installed'
 					: `Not Installed(${
 							Object.keys(settings.commPlugins).length -
-							getInstalled().length
+							getInstalled(this.app).length
 						})`,
 				byGroup: `By Group`,
 				hidden: `Hidden(${getHidden(this, Object.keys(settings.commPlugins)).length})`,
@@ -393,7 +393,7 @@ export class CPModal extends Modal {
 						while (tempDiv.firstChild) {
 							el.appendChild(tempDiv.firstChild);
 						}
-						if (isInstalled(item)) {
+						if (isInstalled(this.app, item)) {
 							el.createSpan({ cls: 'installed-span', text: 'installed' });
 						}
 						if (isEnabled(this, item)) {
@@ -597,11 +597,11 @@ function cpmModeSort(modal: CPModal, listItems: string[]): string[] {
 
 	const sortFunctions: { [key: string]: () => string[] } = {
 		[CommFilters.installed]: () => {
-			const installedPlugins = getInstalled();
+			const installedPlugins = getInstalled(modal.app);
 			return listItems.filter((item) => installedPlugins.includes(item));
 		},
 		[CommFilters.notInstalled]: () => {
-			const installedPlugins = getInstalled();
+			const installedPlugins = getInstalled(modal.app);
 			return listItems.filter((item) => !installedPlugins.includes(item));
 		},
 		[CommFilters.hasNote]: () => {
@@ -807,7 +807,7 @@ async function getPluginListFromFile(): Promise<string[] | null> {
 }
 
 export async function getPluginsList(modal: CPModal, _save = false): Promise<void> {
-	const installed = getInstalled();
+	const installed = getInstalled(modal.app);
 
 	if (Platform.isDesktop) {
 		// Desktop version: use file dialog

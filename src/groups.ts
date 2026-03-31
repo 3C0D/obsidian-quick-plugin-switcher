@@ -255,7 +255,7 @@ async function uninstallAllPluginsInGroup(
 	const { settings } = plugin;
 	const { commPlugins } = settings;
 	for (const id of inGroup) {
-		if (!isInstalled(id)) continue;
+		if (!isInstalled(modal.app, id)) continue;
 		try {
 			await this.app.plugins.uninstallPlugin(id);
 			new Notice(`${commPlugins[id].name} uninstalled`, 5000);
@@ -276,7 +276,7 @@ export async function installAllPluginsInGroup(
 	const { settings } = plugin;
 	const { commPlugins } = settings;
 	for (const id of inGroup) {
-		if (isInstalled(id)) {
+		if (isInstalled(modal.app, id)) {
 			new Notice(`${commPlugins[id].name} already installed`, 5000);
 			continue;
 		}

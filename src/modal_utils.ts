@@ -1,5 +1,6 @@
 import type Plugin from './main.ts';
 import { QPSModal } from './main_modal.ts';
+import type { App } from 'obsidian';
 import { Notice } from 'obsidian';
 import { confirm } from './secondary_modals.ts';
 import { CPModal } from './community-plugins_modal.ts';
@@ -183,8 +184,8 @@ export const pressDelay = (modal: CPModal | QPSModal): void => {
 };
 
 /** Returns the list of installed plugin ids from Obsidian's manifest registry. */
-export function getInstalled(): string[] {
-	return Object.keys(this.app.plugins.manifests);
+export function getInstalled(app: App): string[] {
+	return Object.keys(app.plugins.manifests);
 }
 
 export function getHidden(modal: QPSModal | CPModal, listItems: string[]): string[] {
@@ -205,8 +206,8 @@ export function getHasNote(modal: CPModal, listItems: string[]): string[] {
 	return listItems.filter((item) => modal.plugin.settings.commPlugins[item].hasNote);
 }
 
-export function isInstalled(id: string): boolean {
-	return getInstalled().includes(id);
+export function isInstalled(app: App, id: string): boolean {
+	return getInstalled(app).includes(id);
 }
 
 export async function reOpenModal(
@@ -261,9 +262,10 @@ export const showHotkeysFor = async function (
 		new Notice('No HotKeys on this plugin', 2500);
 		return;
 	}
-	await this.app.setting.open();
-	await this.app.setting.openTabById('hotkeys');
-	const tab = await this.app.setting.activeTab;
+	await modal.app.setting.open();
+	await modal.app.setting.openTabById('hotkeys');
+	const tab = modal.app.setting.activeTab as HotkeysTabLike | null;
+	if (!tab) return;
 	let name = pluginItem.name;
 	if (modal instanceof CPModal) {
 		name = modal.plugin.settings.installed[pluginItem.id].name;

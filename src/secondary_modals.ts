@@ -199,7 +199,7 @@ export class ReadMeModal extends Modal {
 
 		// not installed: show Install / installed: show enable, disable, uninstall...
 		const divButtons = contentEl.createDiv({ cls: 'read-me-buttons' });
-		if (!isInstalled(id)) {
+		if (!isInstalled(this.app, id)) {
 			new ButtonComponent(divButtons)
 				.setButtonText('Install')
 				.setCta()
