@@ -25,10 +25,12 @@ export const reset = async (modal: QPSModal): Promise<void> => {
 };
 
 /** Sorts installed plugins by name alphabetically. */
-export const sortByName = (plugin: Plugin, listItems: string[]): void => {
+export const sortByName = (plugin: Plugin, listItems: string[]): string[] => {
 	const { settings } = plugin;
 	const { installed } = settings;
-	listItems.sort((a, b) => installed[a].name.localeCompare(installed[b].name));
+	return listItems.sort((a, b) =>
+		installed[a].name.localeCompare(installed[b].name)
+	);
 };
 
 /** Sorts installed plugins by most switched (toggle count) descending. */
@@ -110,8 +112,6 @@ export const modeSort = (
 ): string[] => {
 	const { settings } = plugin;
 	const { installed, filters } = settings;
-	const sortByName = (a: string, b: string): number =>
-		installed[a].name.localeCompare(installed[b].name);
 
 	if (plugin.reset) {
 		listItems.forEach((id) => (installed[id].switched = 0));
@@ -127,25 +127,28 @@ export const modeSort = (
 				},
 				[[], []] as [string[], string[]]
 			);
-			return [...enabled.sort(sortByName), ...disabled.sort(sortByName)];
+			return [...sortByName(plugin, enabled), ...sortByName(plugin, disabled)];
 		},
 		[Filters.byGroup]: () => {
 			const groupIndex = getIndexFromSelectedGroup(settings.selectedGroup);
 			return groupIndex !== 0
-				? listItems
-						.filter((i) =>
+				? sortByName(
+						plugin,
+						listItems.filter((i) =>
 							installed[i].groupInfo.groupIndices.includes(groupIndex)
 						)
-						.sort(sortByName)
-				: listItems.sort(sortByName);
+					)
+				: sortByName(plugin, listItems);
 		},
 		[Filters.mostSwitched]: () =>
 			listItems.sort(
 				(a, b) =>
-					installed[b].switched - installed[a].switched || sortByName(a, b)
+					installed[b].switched -
+						installed[a].switched ||
+						installed[a].name.localeCompare(installed[b].name)
 			),
 		[Filters.hidden]: () => getHidden(modal, listItems),
-		[Filters.all]: () => listItems.sort(sortByName)
+		[Filters.all]: () => sortByName(plugin, listItems)
 	};
 
 	return (sortFunctions[filters] || sortFunctions[Filters.all])();

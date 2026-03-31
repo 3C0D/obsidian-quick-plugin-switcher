@@ -258,11 +258,7 @@ export default class QuickPluginSwitcher extends Plugin {
 						)
 					) {
 						installed[key].enabled = !installed[key].enabled;
-					} else if (
-						installed[key].delayed ||
-						installed[key].target === TargetPlatform.Mobile ||
-						installed[key].target === TargetPlatform.Desktop
-					) {
+					} else {
 						if (isEnabled(this, key)) {
 							installed[key].enabled = true;
 							await this.app.plugins.disablePluginAndSave(key);
