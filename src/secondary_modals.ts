@@ -171,9 +171,33 @@ export class ReadMeModal extends Modal {
 		this.modal = modal;
 		this.pluginItem = pluginItem;
 		this.modalEl.addClass('read-me-modal');
+		this.mousePosition = { x: 0, y: 0 };
 		// Component needed to properly manage the lifecycle of MarkdownRenderer
 		this.comp = new Component();
 		this.comp.load();
+		// Register once: onOpen can be called multiple times after install/enable/disable actions.
+		this.modalEl.addEventListener('mousemove', (event) => {
+			this.mousePosition = { x: event.clientX, y: event.clientY };
+		});
+		this.modalEl.addEventListener('contextmenu', (event) => {
+			event.preventDefault();
+			const selectedContent = getSelectedContent();
+			if (selectedContent) {
+				const menu = new Menu();
+				menu.addItem((item) =>
+					item.setTitle('Copy (Ctrl+C)').onClick(async () => {
+						await navigator.clipboard.writeText(selectedContent);
+					})
+				);
+				menu.addItem((item) =>
+					item.setTitle('translate (t)').onClick(async () => {
+						await translation(this.app, selectedContent);
+					})
+				);
+
+				menu.showAtPosition(this.mousePosition);
+			}
+		});
 	}
 
 	async onOpen(): Promise<void> {
@@ -322,11 +346,6 @@ export class ReadMeModal extends Modal {
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, '/', this.comp);
 
-		// track mouse position to show context menu at the right spot
-		this.modalEl.addEventListener('mousemove', (event) => {
-			this.mousePosition = { x: event.clientX, y: event.clientY };
-		});
-
 		this.scope.register([], 't', async () => {
 			const selectedContent = getSelectedContent();
 			if (!selectedContent) {
@@ -347,26 +366,6 @@ export class ReadMeModal extends Modal {
 			async (e) => await openGitHubRepo(e, this.modal, pluginItem)
 		);
 		this.scope.register([], 'escape', async () => this.close());
-
-		this.modalEl.addEventListener('contextmenu', (event) => {
-			event.preventDefault();
-			const selectedContent = getSelectedContent();
-			if (selectedContent) {
-				const menu = new Menu();
-				menu.addItem((item) =>
-					item.setTitle('Copy (Ctrl+C)').onClick(async () => {
-						await navigator.clipboard.writeText(selectedContent);
-					})
-				);
-				menu.addItem((item) =>
-					item.setTitle('translate (t)').onClick(async () => {
-						await translation(this.app, selectedContent);
-					})
-				);
-
-				menu.showAtPosition(this.mousePosition);
-			}
-		});
 	}
 
 	onClose(): void {
@@ -423,7 +422,7 @@ export class SeeNoteModal extends Modal {
 						break;
 					}
 				}
-				this.onClose();
+				this.close();
 				if (stop) return;
 				if (this.sectionContent && !this.sectionContent.endsWith('\n')) {
 					this.sectionContent = this.sectionContent + '\n';
