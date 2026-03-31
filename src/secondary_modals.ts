@@ -346,6 +346,7 @@ export class ReadMeModal extends Modal {
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, '/', this.comp);
 
+		// Keep README actions keyboard-accessible while this modal is focused.
 		this.scope.register([], 't', async () => {
 			const selectedContent = getSelectedContent();
 			if (!selectedContent) {
@@ -371,6 +372,7 @@ export class ReadMeModal extends Modal {
 	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
+		// Release renderer-owned resources to avoid leaks between modal instances.
 		this.comp.unload();
 	}
 }
@@ -404,7 +406,7 @@ export class SeeNoteModal extends Modal {
 			text.setValue(this.sectionContent ?? '');
 			text.inputEl.rows = 40;
 			text.inputEl.cols = 82;
-			// save on blur rather than on a save button, to avoid losing content
+			// Persist on blur so accidental modal close does not drop edits.
 			text.inputEl.onblur = async () => {
 				this.sectionContent = text.getValue();
 				const lines = this.sectionContent.split('\n');

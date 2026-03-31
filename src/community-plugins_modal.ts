@@ -577,6 +577,7 @@ function sortItemsBy(modal: CPModal, listItems: string[]): string[] {
 			),
 		Released: () =>
 			listItems.sort((a, b) => {
+				// "Released" follows the order from community-plugins.json (settings.plugins).
 				const indexA = settings.plugins.findIndex(
 					(id: string) => id === commPlugins[a].id
 				);
@@ -637,7 +638,7 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal): Promise<void
 	if (targetBlock) {
 		(
 			document.querySelector('.qps-search-component input') as HTMLInputElement
-		)?.blur(); // for a reason not working in a function. must be fast I guess
+		)?.blur(); // Ensure key handlers act on item shortcuts, not the search input.
 		modal.searchTyping = false;
 		const matchingItem = findMatchingItem(modal, targetBlock);
 		if (matchingItem) {
@@ -686,6 +687,7 @@ const handleHotkeysCPM = async (
 	let groupIndices = pluginItem.groupCommInfo.groupIndices;
 	const key = parseInt(keyPressed);
 	if (key > 0 && key <= numberOfGroups) {
+		// UI renders up to 6 group circles; keep keyboard assignment aligned.
 		if (groupIndices.length === 6) return;
 		const index = groupIndices.indexOf(key);
 		if (index === -1) {
