@@ -198,6 +198,26 @@ export class ReadMeModal extends Modal {
 				menu.showAtPosition(this.mousePosition);
 			}
 		});
+		// Register once per modal instance to avoid duplicate handlers after onOpen refreshes.
+		this.scope.register([], 't', async () => {
+			const selectedContent = getSelectedContent();
+			if (!selectedContent) {
+				new Notice('no selection', 4000);
+				return;
+			}
+			await translation(this.app, selectedContent);
+		});
+		this.scope.register(
+			[],
+			'n',
+			async (e) => await handleNote(e, this.modal, this.pluginItem)
+		);
+		this.scope.register(
+			[],
+			'g',
+			async (e) => await openGitHubRepo(e, this.modal, this.pluginItem)
+		);
+		this.scope.register([], 'escape', async () => this.close());
 	}
 
 	async onOpen(): Promise<void> {
@@ -346,27 +366,6 @@ export class ReadMeModal extends Modal {
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, '/', this.comp);
 
-		// Keep README actions keyboard-accessible while this modal is focused.
-		this.scope.register([], 't', async () => {
-			const selectedContent = getSelectedContent();
-			if (!selectedContent) {
-				new Notice('no selection', 4000);
-				return;
-			}
-			await translation(this.app, selectedContent);
-		});
-
-		this.scope.register(
-			[],
-			'n',
-			async (e) => await handleNote(e, this.modal, pluginItem)
-		);
-		this.scope.register(
-			[],
-			'g',
-			async (e) => await openGitHubRepo(e, this.modal, pluginItem)
-		);
-		this.scope.register([], 'escape', async () => this.close());
 	}
 
 	onClose(): void {
@@ -413,7 +412,7 @@ export class SeeNoteModal extends Modal {
 				let stop = false;
 				for (const line of lines) {
 					// H1 would break the notes file structure, copy to clipboard as fallback
-					if (line.startsWith('# ')) {
+					if (/^#\s*/.test(line)) {
 						new Notice(
 							'H1 are not allowed, content was paste in clipboard',
 							4000

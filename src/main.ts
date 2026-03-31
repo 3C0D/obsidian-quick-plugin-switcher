@@ -182,6 +182,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		const installed = this.settings.installed || {};
 		const wrapper1 = around(this.app.plugins, {
 			disablePluginAndSave(oldMethod) {
+				// Keep function keyword: monkey-around binds `this` to the patched plugins owner.
 				return async function (pluginId: string) {
 					if (stillInstalled.length) {
 						const id = stillInstalled.find(
@@ -204,6 +205,7 @@ export default class QuickPluginSwitcher extends Plugin {
 
 		const wrapper2 = around(this.app.plugins, {
 			enablePluginAndSave(oldMethod) {
+				// Keep function keyword: monkey-around binds `this` to the patched plugins owner.
 				return async function (pluginId: string) {
 					let altReturn = false;
 					if (stillInstalled.length) {

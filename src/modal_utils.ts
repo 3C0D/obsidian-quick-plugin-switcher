@@ -33,13 +33,6 @@ export const sortByName = (plugin: Plugin, listItems: string[]): string[] => {
 	);
 };
 
-/** Sorts installed plugins by most switched (toggle count) descending. */
-export const sortSwitched = (plugin: Plugin, listItems: string[]): void => {
-	const { settings } = plugin;
-	const { installed } = settings;
-	listItems.sort((a, b) => installed[b].switched - installed[a].switched);
-};
-
 export const togglePlugin = async (
 	modal: QPSModal,
 	pluginItem: PluginInstalled
@@ -138,10 +131,10 @@ export const modeSort = (
 							installed[i].groupInfo.groupIndices.includes(groupIndex)
 						)
 					)
-				: sortByName(plugin, listItems);
+				: sortByName(plugin, [...listItems]);
 		},
 		[Filters.mostSwitched]: () =>
-			listItems.sort(
+			[...listItems].sort(
 				(a, b) =>
 					installed[b].switched -
 						installed[a].switched ||
@@ -149,7 +142,7 @@ export const modeSort = (
 						installed[a].name.localeCompare(installed[b].name)
 			),
 		[Filters.hidden]: () => getHidden(modal, listItems),
-		[Filters.all]: () => sortByName(plugin, listItems)
+		[Filters.all]: () => sortByName(plugin, [...listItems])
 	};
 
 	return (sortFunctions[filters] || sortFunctions[Filters.all])();
