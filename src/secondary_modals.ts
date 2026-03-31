@@ -138,14 +138,15 @@ async function openConfirmModal(
 	});
 }
 
-/** Public entry point for confirm dialogs — uses this.app from the calling context. */
+/** Public entry point for confirm dialogs. */
 export async function confirm(
+	app: App,
 	message: string,
 	width?: number,
 	height?: number
 ): Promise<boolean> {
 	return await openConfirmModal(
-		this.app,
+		app,
 		message,
 		width ?? undefined,
 		height ?? undefined

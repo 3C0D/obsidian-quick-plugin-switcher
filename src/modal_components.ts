@@ -439,6 +439,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 							.setIcon('reset')
 							.onClick(async () => {
 								const confirmReset = await confirm(
+									modal.app,
 									'reset to disable',
 									300
 								);
@@ -530,6 +531,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement): void => {
 									.setIcon('reset')
 									.onClick(async () => {
 										const confirmReset = await confirm(
+											modal.app,
 											'skip re-enable ?',
 											200
 										);
@@ -1416,6 +1418,7 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal): void {
 	submenu.addItem((subitem) => {
 		subitem.setTitle('All groups').onClick(async () => {
 			const confirmReset = await confirm(
+				modal.app,
 				'Detach all groups from all plugins?',
 				300
 			);

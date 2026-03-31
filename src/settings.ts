@@ -100,6 +100,7 @@ export class QPSSettingTab extends PluginSettingTab {
 		) => {
 			if (value < this.lastConfirmedValues[key]) {
 				const confirmReset = await confirm(
+					this.app,
 					'Reducing number of groups, higher groups info will be lost',
 					350
 				);

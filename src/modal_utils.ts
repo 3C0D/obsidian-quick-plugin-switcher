@@ -12,7 +12,7 @@ import { getIndexFromSelectedGroup } from './groups.ts';
  */
 export const reset = async (modal: QPSModal): Promise<void> => {
 	const { plugin } = modal;
-	const confirmed = await confirm('Reset most switched values?', 250);
+	const confirmed = await confirm(modal.app, 'Reset most switched values?', 250);
 	if (confirmed) {
 		plugin.reset = true; //if true, reset done in modal>addItems()
 		plugin.getLength();
