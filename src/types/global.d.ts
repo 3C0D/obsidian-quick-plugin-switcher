@@ -1,24 +1,26 @@
 import 'obsidian';
-import { CommFilters, Filters, SortBy, TargetPlatform } from './variables.ts';
-import { PluginManifest } from 'obsidian';
+import type { CommFilters, Filters, SortBy, TargetPlatform } from './variables.ts';
+import type { PluginManifest } from 'obsidian';
 import 'obsidian-typings';
 
+// Global interface for Electron integration
+declare global {
+	interface WindowWithElectron {
+		electron?: {
+			remote: {
+				dialog: {
+					showOpenDialogSync(options: Record<string, unknown>): string[] | undefined;
+					showSaveDialogSync(options: Record<string, unknown>): string | undefined;
+				};
+				shell: {
+					openPath(path: string): Promise<string>;
+				};
+			};
+		};
+	}
+}
+
 declare module 'obsidian' {
-	// 	interface App {
-	// 		// setting: Setting;
-	// 		// commands: Commands;
-	// 		// isMobile: boolean;
-	// 	}
-
-	// interface Commands {
-	// 	executeCommandById: (commandId: string) => boolean;
-	// 	removeCommand: (commandId: string) => void;
-	// }
-
-	// interface Setting extends Modal {
-	// 	openTabById: (id: string) => Record<string, any>;
-	// }
-
 	interface DataAdapter {
 		getFullPath: (normalizedPath: string) => string;
 	}

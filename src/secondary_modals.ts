@@ -1,5 +1,5 @@
+import type { App } from 'obsidian';
 import {
-	App,
 	ButtonComponent,
 	Component,
 	MarkdownRenderer,
@@ -10,13 +10,9 @@ import {
 	Scope,
 	Setting
 } from 'obsidian';
-import QuickPluginSwitcher from './main.ts';
-import {
-	CPModal,
-	getManifest,
-	getReadMe,
-	handleNote
-} from './community-plugins_modal.ts';
+import type QuickPluginSwitcher from './main.ts';
+import type { CPModal } from './community-plugins_modal.ts';
+import { getManifest, getReadMe, handleNote } from './community-plugins_modal.ts';
 import {
 	isInstalled,
 	modifyGitHubLinks,
@@ -276,9 +272,10 @@ export class ReadMeModal extends Modal {
 						await this.onOpen();
 						new Notice(`${pluginItem.name} uninstalled`, 2500);
 						await reOpenModal(this.modal);
-					} catch (error: any) {
+					} catch (error: unknown) {
+						const message = error instanceof Error ? error.message : String(error);
 						new Notice(
-							`Failed to uninstall ${pluginItem.name}: ${error.message}`,
+							`Failed to uninstall ${pluginItem.name}: ${message}`,
 							5000
 						);
 					}

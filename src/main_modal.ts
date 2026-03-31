@@ -1,5 +1,5 @@
+import type { App } from 'obsidian';
 import {
-	App,
 	DropdownComponent,
 	Menu,
 	Modal,
@@ -8,7 +8,7 @@ import {
 	setIcon
 } from 'obsidian';
 import { removeItem } from './utils.ts';
-import QuickPluginSwitcher from './main.ts';
+import type QuickPluginSwitcher from './main.ts';
 import {
 	mostSwitchedResetButton,
 	itemToggleClass,
@@ -51,7 +51,7 @@ import {
 	getPluginsInGroup,
 	groupNbFromGrpName
 } from './groups.ts';
-import { CPModal } from './community-plugins_modal.ts';
+import type { CPModal } from './community-plugins_modal.ts';
 import type { KeyToSettingsMapType, PluginInstalled } from './types/global.ts';
 
 /** Main modal for QPS — lists all installed plugins with toggle, group, and filter controls. */

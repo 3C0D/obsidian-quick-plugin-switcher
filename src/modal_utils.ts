@@ -1,4 +1,4 @@
-import Plugin from './main.ts';
+import type Plugin from './main.ts';
 import { QPSModal } from './main_modal.ts';
 import { Notice } from 'obsidian';
 import { confirm } from './secondary_modals.ts';
@@ -56,7 +56,7 @@ export async function openDirectoryInFileManager(
 	modal: QPSModal,
 	pluginItem: PluginInstalled
 ): Promise<void> {
-	const shell = (window.electron as any).remote.shell;
+	const shell = ((window as unknown as WindowWithElectron).electron!).remote.shell;
 	const filePath = modal.app.vault.adapter.getFullPath(pluginItem.dir as string);
 	try {
 		await shell.openPath(filePath);

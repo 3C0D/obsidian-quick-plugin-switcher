@@ -1,5 +1,6 @@
-import { App, debounce, PluginSettingTab, Setting, SliderComponent } from 'obsidian';
-import QuickPluginSwitcher from './main.ts';
+import type { App, SliderComponent } from 'obsidian';
+import { debounce, PluginSettingTab, Setting } from 'obsidian';
+import type QuickPluginSwitcher from './main.ts';
 import { confirm } from './secondary_modals.ts';
 import { FolderSuggest } from './suggester.ts';
 import type { PluginCommInfo, PluginInstalled } from './types/global.ts';

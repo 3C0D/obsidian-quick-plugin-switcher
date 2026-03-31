@@ -1,4 +1,5 @@
-import { Notice, Modal, App } from 'obsidian';
+import type { App } from 'obsidian';
+import { Notice, Modal } from 'obsidian';
 
 /** Checks if the obsidian-translate plugin is installed and has a valid translator configured. */
 function canTranslate(): boolean {
@@ -9,7 +10,7 @@ function canTranslate(): boolean {
  * Translates text using the obsidian-translate plugin.
  * Target language is determined by that plugin's own settings (last used, specific, or display language).
  */
-async function translate(text: string, from: string): Promise<any> {
+async function translate(text: string, from: string): Promise<unknown> {
 	let to = '';
 	const plugin = this.app.plugins.plugins.translate;
 	if (!plugin) {

@@ -265,9 +265,10 @@ async function uninstallAllPluginsInGroup(
 		try {
 			await this.app.plugins.uninstallPlugin(id);
 			new Notice(`${commPlugins[id].name} uninstalled`, 5000);
-		} catch (error: any) {
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
 			new Notice(
-				`Failed to uninstall ${commPlugins[id].name}: ${error.message}`,
+				`Failed to uninstall ${commPlugins[id].name}: ${message}`,
 				5000
 			);
 		}

@@ -1,18 +1,17 @@
+import type { App, TFile } from 'obsidian';
 import {
-	App,
 	DropdownComponent,
 	Menu,
 	Modal,
 	Notice,
 	Platform,
 	type PluginManifest,
-	TFile,
 	normalizePath,
 	prepareSimpleSearch,
 	requestUrl,
 	setIcon
 } from 'obsidian';
-import QuickPluginSwitcher from './main.ts';
+import type QuickPluginSwitcher from './main.ts';
 import {
 	calculateTimeElapsed,
 	formatNumber,
@@ -482,7 +481,7 @@ export class CPModal extends Modal {
 }
 
 /** Generic fetch wrapper — returns parsed JSON or null on error. */
-export async function fetchData(url: string, message?: string): Promise<any> {
+export async function fetchData(url: string, message?: string): Promise<unknown> {
 	try {
 		const response = await requestUrl(url);
 		if (response.status !== 200) {
@@ -500,7 +499,7 @@ export async function fetchData(url: string, message?: string): Promise<any> {
 }
 
 /** Tries README.md then README.org from the GitHub API. Returns the raw API response or null. */
-export async function getReadMe(item: PluginCommInfo): Promise<any> {
+export async function getReadMe(item: PluginCommInfo): Promise<unknown> {
 	const repo = item.repo;
 	const readmeFormats = ['README.md', 'README.org'];
 
@@ -529,7 +528,7 @@ export async function getManifest(
 	const repo = commPlugins[id]?.repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/HEAD/manifest.json`;
 
-	return fetchData(repoURL, `Error fetching manifest for ${id}:`);
+	return (await fetchData(repoURL, `Error fetching manifest for ${id}:`)) as PluginManifest | null;
 }
 
 export async function getReleaseVersion(
@@ -779,13 +778,13 @@ async function getPluginListFromFile(): Promise<string[] | null> {
 	}
 
 	const properties = ['openFile'];
-	const filePaths: string[] = (window.electron as any).remote.dialog.showOpenDialogSync(
+	const filePaths = (window as unknown as WindowWithElectron).electron!.remote.dialog.showOpenDialogSync(
 		{
 			title: 'Pick json list file of plugins to install',
 			properties,
 			filters: [{ name: 'JsonList', extensions: ['json'] }]
 		}
-	);
+	) as string[] | undefined;
 
 	if (filePaths && filePaths.length) {
 		try {
@@ -813,12 +812,12 @@ export async function getPluginsList(modal: CPModal, _save = false): Promise<voi
 
 	if (Platform.isDesktop) {
 		// Desktop version: use file dialog
-		const filePath: string = (
-			window.electron as any
+		const filePath = (
+			(window as unknown as WindowWithElectron).electron!
 		).remote.dialog.showSaveDialogSync({
 			title: 'Save installed plugins list as JSON',
 			filters: [{ name: 'JSON Files', extensions: ['json'] }]
-		});
+		}) as string | undefined;
 		if (filePath && filePath.length) {
 			try {
 				const jsonContent = JSON.stringify(installed, null, 2);
@@ -854,10 +853,10 @@ export async function installPluginFromOtherVault(
 		return;
 	}
 
-	const dirPath: string[] = (window.electron as any).remote.dialog.showOpenDialogSync({
+	const dirPath = ((window as unknown as WindowWithElectron).electron!).remote.dialog.showOpenDialogSync({
 		title: 'Select your vault directory, you want plugins list from',
 		properties: ['openDirectory']
-	});
+	}) as string[] | undefined;
 	if (dirPath && dirPath.length) {
 		const vaultPath = dirPath[0];
 		const fs = window.require('fs');

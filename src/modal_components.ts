@@ -1,12 +1,12 @@
 import { QPSModal } from './main_modal.ts';
 import { ReadMeModal, confirm } from './secondary_modals.ts';
+import type { SearchComponent, MenuItem } from 'obsidian';
 import {
 	ButtonComponent,
 	ExtraButtonComponent,
 	Menu,
 	Notice,
 	Platform,
-	SearchComponent,
 	Setting,
 	TextComponent,
 	debounce,
@@ -51,7 +51,7 @@ import {
 	addDelayToGroup
 } from './groups.ts';
 import type { PluginCommInfo, PluginInstalled } from './types/global.ts';
-import QuickPluginSwitcher from './main.ts';
+import type QuickPluginSwitcher from './main.ts';
 import slug from 'slug';
 import { translation } from './translate.ts';
 import { normalize } from 'path';
@@ -1047,9 +1047,10 @@ export function contextMenuCPM(
 					await this.app.plugins.uninstallPlugin(id);
 					new Notice(`${matchingItem.name} uninstalled`, 2500);
 					await reOpenModal(modal);
-				} catch (error: any) {
+				} catch (error: unknown) {
+					const message = error instanceof Error ? error.message : String(error);
 					new Notice(
-						`Failed to uninstall ${matchingItem.name}: ${error.message}`,
+						`Failed to uninstall ${matchingItem.name}: ${message}`,
 						3500
 					);
 				}
@@ -1114,7 +1115,7 @@ async function contextMenuQPS(
 	if (!this.app.isMobile) {
 		menu.addItem(async (item) => {
 			item.setTitle('Plugin features').setIcon('package-plus');
-			const submenu = (item as any).setSubmenu() as Menu;
+			const submenu = (item as MenuItem).setSubmenu() as Menu;
 			await pluginFeatureSubmenu(evt, submenu, matchingItem, modal);
 		});
 	} else {
@@ -1130,7 +1131,7 @@ async function contextMenuQPS(
 					: 'run on Both';
 			item.setTitle(text);
 		}
-		const submenu = Platform.isMobile ? menu : ((item as any).setSubmenu() as Menu);
+		const submenu = Platform.isMobile ? menu : ((item as MenuItem).setSubmenu() as Menu);
 		// Get only the string keys
 		Object.keys(TargetPlatform)
 			.filter((key) => isNaN(Number(key)))
@@ -1225,9 +1226,10 @@ async function contextMenuQPS(
 						new Notice(`${matchingItem.name} uninstalled`, 2500);
 						await modal.plugin.installedUpdate();
 						await reOpenModal(modal);
-					} catch (error: any) {
+					} catch (error: unknown) {
+						const message = error instanceof Error ? error.message : String(error);
 						new Notice(
-							`Failed to uninstall ${matchingItem.name}: ${error.message}`,
+							`Failed to uninstall ${matchingItem.name}: ${message}`,
 							3500
 						);
 					}
@@ -1265,7 +1267,7 @@ async function contextMenuQPS(
 		if (!this.app.isMobile) {
 			menu.addItem((item) => {
 				item.setTitle('Add to group').setIcon('user');
-				const submenu = (item as any).setSubmenu() as Menu;
+				const submenu = (item as MenuItem).setSubmenu() as Menu;
 				addToGroupSubMenu(submenu, matchingItem, modal);
 			});
 		} else {
@@ -1275,7 +1277,7 @@ async function contextMenuQPS(
 		if (!this.app.isMobile) {
 			menu.addItem((item) => {
 				item.setTitle('Remove from group').setIcon('user-minus');
-				const submenu = (item as any).setSubmenu() as Menu;
+				const submenu = (item as MenuItem).setSubmenu() as Menu;
 				submenu.addItem((subitem) => {
 					subitem
 						.setTitle('All groups')
@@ -1390,7 +1392,7 @@ export const createClearGroupsMenuItem = (
 		menu.addItem((item) => {
 			item.setTitle('Clear group(s)').setIcon('user-minus');
 
-			const submenu = (item as any).setSubmenu() as Menu;
+			const submenu = (item as MenuItem).setSubmenu() as Menu;
 			addRemoveGroupMenuItems(modal, submenu, groupNumber);
 			submenu.addSeparator();
 			clearAllGroups(submenu, modal);

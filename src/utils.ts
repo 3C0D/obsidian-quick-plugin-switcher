@@ -1,7 +1,7 @@
 import type { CommandsCommandsRecord } from 'obsidian-typings';
-import { CPModal } from './community-plugins_modal.ts';
-import QuickPluginSwitcher from './main.ts';
-import { QPSModal } from './main_modal.ts';
+import type { CPModal } from './community-plugins_modal.ts';
+import type QuickPluginSwitcher from './main.ts';
+import type { QPSModal } from './main_modal.ts';
 
 export function isEnabled(
 	modal: QuickPluginSwitcher | CPModal | QPSModal,
