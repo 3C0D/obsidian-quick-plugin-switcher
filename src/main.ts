@@ -261,6 +261,8 @@ export default class QuickPluginSwitcher extends Plugin {
 					} else {
 						if (isEnabled(this, key)) {
 							installed[key].enabled = true;
+							// Re-apply runtime state for delayed/platform-bound plugins without
+							// persisting a regular enable toggle from this reconciliation step.
 							await this.app.plugins.disablePluginAndSave(key);
 							await this.app.plugins.enablePlugin(key);
 						}

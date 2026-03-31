@@ -1,6 +1,10 @@
 import type { App } from 'obsidian';
 import { Notice, Modal } from 'obsidian';
 
+/**
+ * Retrieves the optional obsidian-translate plugin API from Obsidian's dynamic plugin registry.
+ * The cast is centralized here so the rest of the file stays type-safe.
+ */
 function getTranslatePlugin(app: App): TranslatePluginApi | null {
 	const plugin = app.plugins.plugins.translate;
 	if (!plugin) return null;

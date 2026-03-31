@@ -145,6 +145,7 @@ export const modeSort = (
 				(a, b) =>
 					installed[b].switched -
 						installed[a].switched ||
+						// Stable tie-breaker for deterministic ordering.
 						installed[a].name.localeCompare(installed[b].name)
 			),
 		[Filters.hidden]: () => getHidden(modal, listItems),
@@ -191,6 +192,7 @@ export function getInstalled(app: App): string[] {
 	return Object.keys(app.plugins.manifests);
 }
 
+/** Returns only items currently marked as hidden in the active modal context. */
 export function getHidden(modal: QPSModal | CPModal, listItems: string[]): string[] {
 	const { settings } = modal.plugin;
 	const { installed, commPlugins } = settings;
@@ -205,10 +207,12 @@ export function getHidden(modal: QPSModal | CPModal, listItems: string[]): strin
 	return listItems.filter((item) => hiddens.includes(item));
 }
 
+/** Filters community plugins that currently have a note attached. */
 export function getHasNote(modal: CPModal, listItems: string[]): string[] {
 	return listItems.filter((item) => modal.plugin.settings.commPlugins[item].hasNote);
 }
 
+/** Checks installation state against the live Obsidian manifest registry. */
 export function isInstalled(app: App, id: string): boolean {
 	return getInstalled(app).includes(id);
 }
@@ -217,6 +221,7 @@ export async function reOpenModal(
 	modal: QPSModal | CPModal,
 	searchInit = false
 ): Promise<void> {
+	// Persist first so re-rendered modal always reflects latest state.
 	await modal.plugin.saveSettings();
 	modal.searchInit = searchInit;
 	await modal.onOpen();
@@ -268,6 +273,7 @@ export const showHotkeysFor = async function (
 	await modal.app.setting.open();
 	await modal.app.setting.openTabById('hotkeys');
 	const tab = modal.app.setting.activeTab as HotkeysTabLike | null;
+	// Defensive guard: setting tab activation is async and can fail silently.
 	if (!tab) return;
 	let name = pluginItem.name;
 	if (modal instanceof CPModal) {
