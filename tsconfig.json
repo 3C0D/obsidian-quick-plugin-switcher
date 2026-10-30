@@ -9,7 +9,7 @@
     },
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2021",
+    "target": "ES2022",
     "inlineSourceMap": true,
     "inlineSources": true,
     "allowJs": true,
@@ -23,7 +23,7 @@
     "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "lib": ["DOM", "ES2021"]
+    "lib": ["DOM", "ES2024"]
   },
   "include": ["./src/**/*.ts", "./scripts/**/*.ts"],
   "exclude": ["node_modules", "eslint.config.ts"]

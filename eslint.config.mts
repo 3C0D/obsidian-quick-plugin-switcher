@@ -7,7 +7,7 @@ import type {
 
 const configs: Linter.Config[] = [
   {
-    ignores: ["eslint.config.mts"]
+    ignores: ["eslint.config.mts", "scripts/**"]
   },
   {
     files: ["**/*.ts"],

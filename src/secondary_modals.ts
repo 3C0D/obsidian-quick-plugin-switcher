@@ -145,12 +145,7 @@ export async function confirm(
 	width?: number,
 	height?: number
 ): Promise<boolean> {
-	return await openConfirmModal(
-		app,
-		message,
-		width ?? undefined,
-		height ?? undefined
-	);
+	return await openConfirmModal(app, message, width ?? undefined, height ?? undefined);
 }
 
 /**
@@ -365,7 +360,6 @@ export class ReadMeModal extends Modal {
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, '/', this.comp);
-
 	}
 
 	onClose(): void {

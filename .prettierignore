@@ -1,0 +1,6 @@
+# Build output
+dist/
+main.js
+
+# Dependencies
+node_modules/

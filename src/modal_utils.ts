@@ -28,9 +28,7 @@ export const reset = async (modal: QPSModal): Promise<void> => {
 export const sortByName = (plugin: Plugin, listItems: string[]): string[] => {
 	const { settings } = plugin;
 	const { installed } = settings;
-	return listItems.sort((a, b) =>
-		installed[a].name.localeCompare(installed[b].name)
-	);
+	return listItems.sort((a, b) => installed[a].name.localeCompare(installed[b].name));
 };
 
 export const togglePlugin = async (
@@ -136,10 +134,9 @@ export const modeSort = (
 		[Filters.mostSwitched]: () =>
 			[...listItems].sort(
 				(a, b) =>
-					installed[b].switched -
-						installed[a].switched ||
-						// Stable tie-breaker for deterministic ordering.
-						installed[a].name.localeCompare(installed[b].name)
+					installed[b].switched - installed[a].switched ||
+					// Stable tie-breaker for deterministic ordering.
+					installed[a].name.localeCompare(installed[b].name)
 			),
 		[Filters.hidden]: () => getHidden(modal, listItems),
 		[Filters.all]: () => sortByName(plugin, [...listItems])

@@ -1,0 +1,4 @@
+# On Windows, git defaults to core.autocrlf=true which converts LF to CRLF and creates false modifications
+* text=auto eol=lf
+*.ts text eol=lf
+*.json text eol=lf

@@ -50,6 +50,22 @@
       "problemMatcher": []
     },
     {
+      "label": "Check Global CLI Version",
+      "type": "shell",
+      "command": "npm list -g obsidian-plugin-config --depth=0",
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Obsidian Inject (no confirm)",
+      "type": "shell",
+      "command": "obsidian-inject --yes",
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
       "label": "Cleanup: Lint + Prettier + Build",
       "dependsOrder": "sequence",
       "dependsOn": ["Lint: Fix", "Prettier: Fix", "Build"],

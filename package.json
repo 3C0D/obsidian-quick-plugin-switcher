@@ -18,8 +18,8 @@
     "h": "tsx scripts/help.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "prettier": "npx prettier --check '**/*.{ts,json}'",
-    "prettier:fix": "npx prettier --write '**/*.{ts,json}'"
+    "prettier": "prettier --check '**/*.{ts,json}'",
+    "prettier:fix": "prettier --write '**/*.{ts,json}'"
   },
   "keywords": [],
   "author": "3C0D",
@@ -29,7 +29,7 @@
     "@types/eslint": "latest",
     "@types/fs-extra": "^11.0.4",
     "@types/markdown-it": "^13.0.2",
-    "@types/node": "latest",
+    "@types/node": "^25.9.2",
     "@types/semver": "latest",
     "@types/slug": "^5.0.7",
     "@typescript-eslint/eslint-plugin": "latest",
